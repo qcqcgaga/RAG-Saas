@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/docchat
+    username: docchat
+    password: docchat_dev
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  security:
+    ignored: /api/chat/**,/api/widget/**
+
+# Milvus 配置
+milvus:
+  host: localhost
+  port: 19530
+
+# 讯飞 Coding Plan API 配置
+xunfei:
+  api-url: https://maas-coding-api.cn-huabei-1.xf-yun.com
+  api-key: ${XUNFEI_API_KEY:dev-placeholder}

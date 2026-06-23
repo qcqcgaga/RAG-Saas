@@ -1,0 +1,104 @@
+services:
+  # ===== 基础设施 =====
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: docchat
+      POSTGRES_USER: docchat
+      POSTGRES_PASSWORD: docchat_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docchat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.16
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: etcd -advertise-client-urls=http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379
+    volumes:
+      - etcd_data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  milvus:
+    image: milvusdb/milvus:v2.4-latest
+    command: milvus run standalone
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== 应用服务 =====
+  server:
+    build:
+      context: ../server
+      dockerfile: ../docker/Dockerfile.server
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://postgres:5432/docchat
+      DATABASE_USERNAME: docchat
+      DATABASE_PASSWORD: docchat_dev
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      XUNFEI_API_KEY: ${XUNFEI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../web
+      dockerfile: ../docker/Dockerfile.web
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:
+  redis_data:
+  etcd_data:
+  milvus_data:

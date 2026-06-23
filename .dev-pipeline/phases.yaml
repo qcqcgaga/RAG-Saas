@@ -1,0 +1,433 @@
+# 软件开发全流程 — 环节定义
+
+> 本文件定义大厂软件开发全流程的各个环节、顺序、依赖关系和产出物。
+> 流程执行时按顺序推进，卡点环节需评审通过后方可继续。
+
+## 流程总览
+
+```
+需求分析 → 需求评审(卡点) → 技术方案设计 → 技术方案评审(卡点)
+→ 详细设计 → 详细设计评审(卡点) → 编码实现 → 代码评审(卡点)
+→ 单元测试 → 集成测试 → 测试评审(卡点) → 部署上线 → 上线验证(卡点)
+```
+
+## 环节定义
+
+### 1. 需求分析
+
+```yaml
+id: requirement-analysis
+name: 需求分析
+order: 1
+gate: false
+description: |
+  从原始需求出发，进行需求收集、澄清、拆解和文档化。
+  输出产品需求文档(PRD)，明确功能范围、用户故事、验收标准。
+depends_on: []
+artifacts:
+  - name: 产品需求文档(PRD)
+    file: docs/pipeline/{project}-prd.md
+    template: .dev-pipeline/templates/prd-template.md
+    description: 包含需求背景、用户故事、功能列表、验收标准、非功能性要求
+  - name: 需求追踪矩阵
+    file: docs/pipeline/{project}-requirement-traceability.md
+    template: .dev-pipeline/templates/traceability-template.md
+    description: 需求ID到功能点的追踪映射
+responsible_role: 产品经理
+review_focus:
+  - 需求是否完整、无歧义
+  - 验收标准是否可验证
+  - 是否有遗漏的边界条件
+  - 非功能性要求是否明确
+```
+
+### 2. 需求评审（卡点）
+
+```yaml
+id: requirement-review
+name: 需求评审
+order: 2
+gate: true
+gate_level: critical
+description: |
+  对需求分析阶段输出的PRD进行正式评审。
+  评审通过后方可进入技术方案设计阶段。
+  评审不通过则打回需求分析阶段修改。
+depends_on: [requirement-analysis]
+gate_checklist:
+  - 需求描述清晰无歧义
+  - 用户故事覆盖所有角色和场景
+  - 验收标准具体可验证
+  - 非功能性要求已明确
+  - 功能边界（不做列表）已定义
+  - 需求优先级已排序
+  - 无遗漏的异常场景
+review_participants: [产品经理, 技术负责人, 测试负责人]
+artifacts:
+  - name: 需求评审记录
+    file: docs/pipeline/{project}-requirement-review.md
+    template: .dev-pipeline/templates/review-record-template.md
+    description: 评审意见、决议、待修改项
+```
+
+### 3. 技术方案设计
+
+```yaml
+id: technical-design
+name: 技术方案设计
+order: 3
+gate: false
+description: |
+  基于PRD进行技术方案设计，包括架构设计、技术选型、
+  数据模型设计、接口设计、安全方案等。
+  输出技术方案文档，供技术方案评审。
+depends_on: [requirement-review]
+artifacts:
+  - name: 技术方案文档
+    file: docs/pipeline/{project}-technical-design.md
+    template: .dev-pipeline/templates/technical-design-template.md
+    description: 架构设计、技术选型、数据模型、接口设计、安全方案
+  - name: 架构图
+    file: docs/pipeline/{project}-architecture.md
+    template: .dev-pipeline/templates/architecture-template.md
+    description: 系统架构图（Mermaid格式）
+  - name: 数据模型设计
+    file: docs/pipeline/{project}-data-model.md
+    template: .dev-pipeline/templates/data-model-template.md
+    description: ER图、表结构设计
+  - name: API接口设计
+    file: docs/pipeline/{project}-api-design.md
+    template: .dev-pipeline/templates/api-design-template.md
+    description: 接口列表、请求响应格式、状态码
+responsible_role: 技术负责人/架构师
+review_focus:
+  - 架构是否满足非功能性要求
+  - 技术选型是否合理
+  - 数据模型是否支持业务场景
+  - 接口设计是否规范完整
+  - 安全方案是否覆盖风险点
+```
+
+### 4. 技术方案评审（卡点）
+
+```yaml
+id: technical-review
+name: 技术方案评审
+order: 4
+gate: true
+gate_level: critical
+description: |
+  对技术方案进行正式评审，确保方案可行、合理、完整。
+  评审通过后方可进入详细设计阶段。
+depends_on: [technical-design]
+gate_checklist:
+  - 架构设计满足性能/可用性/安全性要求
+  - 技术选型有充分理由，无过度设计
+  - 数据模型完整，表关系清晰
+  - API设计符合RESTful规范，覆盖所有场景
+  - 安全方案覆盖认证/授权/数据安全
+  - 方案可落地，工作量评估合理
+  - 与现有系统兼容性已考虑
+review_participants: [架构师, 技术负责人, 高级开发, 测试负责人]
+artifacts:
+  - name: 技术方案评审记录
+    file: docs/pipeline/{project}-technical-review.md
+    template: .dev-pipeline/templates/review-record-template.md
+    description: 评审意见、决议、待修改项
+```
+
+### 5. 详细设计
+
+```yaml
+id: detailed-design
+name: 详细设计
+order: 5
+gate: false
+description: |
+  基于技术方案进行详细设计，包括模块划分、类设计、
+  方法签名、时序图、状态机等。输出详细设计文档。
+depends_on: [technical-review]
+artifacts:
+  - name: 详细设计文档
+    file: docs/pipeline/{project}-detailed-design.md
+    template: .dev-pipeline/templates/detailed-design-template.md
+    description: 模块设计、类图、时序图、状态机、关键算法
+  - name: 任务拆分与排期
+    file: docs/pipeline/{project}-task-breakdown.md
+    template: .dev-pipeline/templates/task-breakdown-template.md
+    description: 开发任务拆分、依赖关系、工时估算、排期
+responsible_role: 开发负责人
+review_focus:
+  - 模块划分是否清晰
+  - 接口契约是否明确
+  - 异常处理是否完整
+  - 任务拆分粒度是否合理
+```
+
+### 6. 详细设计评审（卡点）
+
+```yaml
+id: detailed-design-review
+name: 详细设计评审
+order: 6
+gate: true
+gate_level: major
+description: |
+  对详细设计进行评审，确保设计可编码实现。
+  评审通过后方可进入编码阶段。
+depends_on: [detailed-design]
+gate_checklist:
+  - 模块职责清晰，无重叠
+  - 类/方法设计合理，符合SOLID原则
+  - 时序图覆盖核心业务流程
+  - 异常场景有处理方案
+  - 任务拆分合理，工时估算可信
+  - 依赖关系明确，无循环依赖
+review_participants: [技术负责人, 高级开发, 开发人员]
+artifacts:
+  - name: 详细设计评审记录
+    file: docs/pipeline/{project}-detailed-design-review.md
+    template: .dev-pipeline/templates/review-record-template.md
+    description: 评审意见、决议、待修改项
+```
+
+### 7. 编码实现
+
+```yaml
+id: coding
+name: 编码实现
+order: 7
+gate: false
+description: |
+  按照详细设计进行编码实现。遵循项目代码规范(.ai/codeRule.md)。
+  每完成一个模块/功能点，进行自测。
+depends_on: [detailed-design-review]
+artifacts:
+  - name: 源代码
+    file: src/
+    description: 按项目结构规范组织的源代码
+  - name: 编码日志
+    file: docs/pipeline/{project}-coding-log.md
+    template: .dev-pipeline/templates/coding-log-template.md
+    description: 编码过程中的决策记录、问题记录、偏差说明
+responsible_role: 开发人员
+review_focus:
+  - 代码是否符合规范
+  - 是否按详细设计实现
+  - 自测是否通过
+  - 是否有技术债务
+```
+
+### 8. 代码评审（卡点）
+
+```yaml
+id: code-review
+name: 代码评审
+order: 8
+gate: true
+gate_level: critical
+description: |
+  对编码产出进行代码评审，确保代码质量。
+  评审通过后方可进入测试阶段。
+depends_on: [coding]
+gate_checklist:
+  - 代码符合命名规范
+  - 无硬编码密钥/连接串
+  - 输入已校验
+  - 错误已处理且不泄露内部信息
+  - 函数复杂度未超限
+  - 无重复代码(DRY)
+  - 新增依赖有必要且无安全风险
+  - 日志输出规范
+  - 注释充分且有意义
+review_participants: [高级开发, 技术负责人]
+artifacts:
+  - name: 代码评审记录
+    file: docs/pipeline/{project}-code-review.md
+    template: .dev-pipeline/templates/review-record-template.md
+    description: 评审意见、问题列表、修改确认
+```
+
+### 9. 单元测试
+
+```yaml
+id: unit-testing
+name: 单元测试
+order: 9
+gate: false
+description: |
+  编写和执行单元测试，覆盖核心业务逻辑。
+  目标覆盖率根据项目要求确定。
+depends_on: [code-review]
+artifacts:
+  - name: 单元测试报告
+    file: docs/pipeline/{project}-unit-test-report.md
+    template: .dev-pipeline/templates/test-report-template.md
+    description: 测试用例数、通过率、覆盖率、失败分析
+  - name: 测试代码
+    file: tests/unit/
+    description: 单元测试源码
+responsible_role: 开发人员
+review_focus:
+  - 核心逻辑覆盖率是否达标
+  - 边界条件是否覆盖
+  - 异常路径是否测试
+  - Mock使用是否合理
+```
+
+### 10. 集成测试
+
+```yaml
+id: integration-testing
+name: 集成测试
+order: 10
+gate: false
+description: |
+  执行集成测试，验证模块间交互、API接口、数据库操作等。
+  包含功能测试和端到端测试。
+depends_on: [unit-testing]
+artifacts:
+  - name: 集成测试报告
+    file: docs/pipeline/{project}-integration-test-report.md
+    template: .dev-pipeline/templates/test-report-template.md
+    description: 测试场景、通过率、缺陷列表、缺陷严重度分布
+  - name: 测试用例
+    file: docs/pipeline/{project}-test-cases.md
+    template: .dev-pipeline/templates/test-cases-template.md
+    description: 集成测试用例集
+  - name: 缺陷清单
+    file: docs/pipeline/{project}-defect-list.md
+    template: .dev-pipeline/templates/defect-list-template.md
+    description: 发现的缺陷列表、状态、严重度
+responsible_role: 测试工程师
+review_focus:
+  - 测试场景是否覆盖所有功能点
+  - 缺陷是否已全部修复或确认延期
+  - 回归测试是否通过
+  - 性能测试是否达标
+```
+
+### 11. 测试评审（卡点）
+
+```yaml
+id: test-review
+name: 测试评审
+order: 11
+gate: true
+gate_level: critical
+description: |
+  对测试结果进行评审，确认产品质量达到发布标准。
+  评审通过后方可进入部署阶段。
+depends_on: [integration-testing]
+gate_checklist:
+  - 所有P0/P1缺陷已修复并验证
+  - P2缺陷有明确处理计划
+  - 单元测试覆盖率达标
+  - 集成测试全部通过
+  - 性能测试达标
+  - 安全测试无高危漏洞
+  - 回归测试通过
+  - 测试报告完整
+review_participants: [测试负责人, 技术负责人, 产品经理]
+artifacts:
+  - name: 测试评审记录
+    file: docs/pipeline/{project}-test-review.md
+    template: .dev-pipeline/templates/review-record-template.md
+    description: 评审意见、发布决策、遗留问题
+  - name: 发布检查清单
+    file: docs/pipeline/{project}-release-checklist.md
+    template: .dev-pipeline/templates/release-checklist-template.md
+    description: 发布前的最终检查项
+```
+
+### 12. 部署上线
+
+```yaml
+id: deployment
+name: 部署上线
+order: 12
+gate: false
+description: |
+  将产品部署到生产环境。包括环境准备、数据迁移、
+  服务部署、配置更新、灰度发布等。
+depends_on: [test-review]
+artifacts:
+  - name: 部署方案
+    file: docs/pipeline/{project}-deployment-plan.md
+    template: .dev-pipeline/templates/deployment-plan-template.md
+    description: 部署步骤、回滚方案、监控方案
+  - name: 部署记录
+    file: docs/pipeline/{project}-deployment-record.md
+    template: .dev-pipeline/templates/deployment-record-template.md
+    description: 实际部署过程记录、时间点、操作人
+responsible_role: 运维工程师/开发负责人
+review_focus:
+  - 部署步骤是否完整
+  - 回滚方案是否可行
+  - 数据迁移是否验证
+  - 监控告警是否就绪
+```
+
+### 13. 上线验证（卡点）
+
+```yaml
+id: release-verification
+name: 上线验证
+order: 13
+gate: true
+gate_level: critical
+description: |
+  产品上线后的验证确认。包括功能验证、性能验证、
+  监控验证。确认产品正常运行，流程闭环。
+depends_on: [deployment]
+gate_checklist:
+  - 核心功能验证通过
+  - 性能指标正常
+  - 错误率在可接受范围
+  - 监控告警正常
+  - 无P0/P1线上问题
+  - 用户可正常访问和使用
+review_participants: [产品经理, 技术负责人, 测试负责人]
+artifacts:
+  - name: 上线验证报告
+    file: docs/pipeline/{project}-release-verification.md
+    template: .dev-pipeline/templates/release-verification-template.md
+    description: 验证结果、线上指标、问题记录
+  - name: 项目复盘报告
+    file: docs/pipeline/{project}-retrospective.md
+    template: .dev-pipeline/templates/retrospective-template.md
+    description: 项目总结、经验教训、改进建议
+```
+
+## 环节依赖关系图
+
+```mermaid
+graph LR
+    A[需求分析] --> B[需求评审★]
+    B --> C[技术方案设计]
+    C --> D[技术方案评审★]
+    D --> E[详细设计]
+    E --> F[详细设计评审★]
+    F --> G[编码实现]
+    G --> H[代码评审★]
+    H --> I[单元测试]
+    I --> J[集成测试]
+    J --> K[测试评审★]
+    K --> L[部署上线]
+    L --> M[上线验证★]
+
+    style B fill:#ff6b6b,color:#fff
+    style D fill:#ff6b6b,color:#fff
+    style F fill:#ff6b6b,color:#fff
+    style H fill:#ff6b6b,color:#fff
+    style K fill:#ff6b6b,color:#fff
+    style M fill:#ff6b6b,color:#fff
+```
+
+★ = 卡点环节，必须评审通过才能继续
+
+## 变更记录
+
+| 日期 | 变更内容 |
+|------|---------|
+| 2026-06-23 | 初始版本，定义13个流程环节 |

@@ -1,0 +1,376 @@
+# 软件开发全流程 — 卡点门禁定义
+
+> 本文件定义流程中的卡点（Gate）环节、评审标准、通过条件和回退规则。
+> 卡点环节必须通过评审才能推进到下一阶段，这是质量保障的核心机制。
+
+## 卡点级别
+
+| 级别 | 含义 | 评审要求 | 回退影响 |
+|------|------|----------|----------|
+| critical | 必须通过，不可跳过 | 全部检查项通过，无P0遗留 | 回退到上一个非卡点环节 |
+| major | 应当通过，极特殊情况可带遗留推进 | 核心检查项通过，P2以下可带遗留 | 回退到上一个非卡点环节 |
+| minor | 建议通过，可带遗留推进 | 核心检查项通过 | 仅修改当前环节产出 |
+
+## 卡点详情
+
+### G1: 需求评审
+
+```yaml
+gate_id: G1
+name: 需求评审
+after_phase: requirement-analysis
+before_phase: technical-design
+level: critical
+description: 确保需求清晰、完整、可验证，是整个流程的基础
+
+checklist:
+  - id: G1-01
+    item: 需求背景和目标明确
+    check_method: PRD中包含明确的背景描述和目标定义
+    severity: blocker
+
+  - id: G1-02
+    item: 用户故事覆盖所有角色
+    check_method: 每个角色至少有1个核心用户故事
+    severity: blocker
+
+  - id: G1-03
+    item: 验收标准具体可验证
+    check_method: 每个功能点有明确的验收标准，可量化
+    severity: blocker
+
+  - id: G1-04
+    item: 功能边界（不做列表）已定义
+    check_method: 明确列出不做的事项及原因
+    severity: major
+
+  - id: G1-05
+    item: 非功能性要求已明确
+    check_method: 性能、安全、可用性等要求已量化
+    severity: major
+
+  - id: G1-06
+    item: 需求优先级已排序
+    check_method: 功能有P0/P1/P2分级
+    severity: minor
+
+  - id: G1-07
+    item: 无遗漏的异常场景
+    check_method: 考虑了异常输入、并发、边界值等场景
+    severity: major
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 80%
+  minor_pass_rate: 60%
+
+rollback:
+  target: requirement-analysis
+  condition: 2个及以上blocker未通过
+  description: 需求需重新分析和文档化
+
+skip_allowed: false
+```
+
+### G2: 技术方案评审
+
+```yaml
+gate_id: G2
+name: 技术方案评审
+after_phase: technical-design
+before_phase: detailed-design
+level: critical
+description: 确保技术方案可行、合理、安全
+
+checklist:
+  - id: G2-01
+    item: 架构设计满足非功能性要求
+    check_method: 逐一验证性能/可用性/安全性要求
+    severity: blocker
+
+  - id: G2-02
+    item: 技术选型有充分理由
+    check_method: 每项选型有对比分析和选择理由
+    severity: blocker
+
+  - id: G2-03
+    item: 数据模型完整
+    check_method: ER图完整，表结构定义清晰
+    severity: blocker
+
+  - id: G2-04
+    item: API设计符合规范且完整
+    check_method: 接口覆盖所有功能，符合RESTful规范
+    severity: blocker
+
+  - id: G2-05
+    item: 安全方案覆盖风险点
+    check_method: 认证/授权/数据安全方案完整
+    severity: blocker
+
+  - id: G2-06
+    item: 方案可落地
+    check_method: 工作量评估合理，技术风险可控
+    severity: major
+
+  - id: G2-07
+    item: 与现有系统兼容
+    check_method: 接口兼容、数据兼容、部署兼容
+    severity: major
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 80%
+
+rollback:
+  target: technical-design
+  condition: 任何blocker未通过
+  description: 技术方案需重新设计
+
+skip_allowed: false
+```
+
+### G3: 详细设计评审
+
+```yaml
+gate_id: G3
+name: 详细设计评审
+after_phase: detailed-design
+before_phase: coding
+level: major
+description: 确保详细设计可编码实现
+
+checklist:
+  - id: G3-01
+    item: 模块职责清晰无重叠
+    check_method: 每个模块有明确职责定义
+    severity: blocker
+
+  - id: G3-02
+    item: 类/方法设计合理
+    check_method: 符合SOLID原则，方法签名明确
+    severity: blocker
+
+  - id: G3-03
+    item: 时序图覆盖核心流程
+    check_method: 至少覆盖P0功能的完整流程
+    severity: major
+
+  - id: G3-04
+    item: 异常场景有处理方案
+    check_method: 错误码、重试策略、降级方案
+    severity: major
+
+  - id: G3-05
+    item: 任务拆分合理
+    check_method: 粒度1-3天，依赖关系明确
+    severity: minor
+
+  - id: G3-06
+    item: 无循环依赖
+    check_method: 依赖关系图无环路
+    severity: blocker
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 80%
+
+rollback:
+  target: detailed-design
+  condition: 2个及以上blocker未通过
+
+skip_allowed: false
+```
+
+### G4: 代码评审
+
+```yaml
+gate_id: G4
+name: 代码评审
+after_phase: coding
+before_phase: unit-testing
+level: critical
+description: 确保代码质量和安全性
+
+checklist:
+  - id: G4-01
+    item: 代码符合命名规范
+    check_method: 对照.ai/codeRule.md命名规范检查
+    severity: blocker
+
+  - id: G4-02
+    item: 无硬编码密钥/连接串
+    check_method: 全文搜索硬编码的敏感信息
+    severity: blocker
+
+  - id: G4-03
+    item: 输入已校验
+    check_method: Controller层有参数校验
+    severity: blocker
+
+  - id: G4-04
+    item: 错误处理规范
+    check_method: 使用统一异常，不泄露内部信息
+    severity: blocker
+
+  - id: G4-05
+    item: 函数复杂度未超限
+    check_method: 函数行数<50，嵌套<3层
+    severity: major
+
+  - id: G4-06
+    item: 无重复代码
+    check_method: 无明显copy-paste代码
+    severity: major
+
+  - id: G4-07
+    item: 新增依赖有必要且安全
+    check_method: 依赖审计无已知漏洞
+    severity: major
+
+  - id: G4-08
+    item: SQL注入防护
+    check_method: 使用参数化查询/ORM，无拼接SQL
+    severity: blocker
+
+  - id: G4-09
+    item: XSS防护
+    check_method: 用户内容转义处理
+    severity: blocker
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 80%
+
+rollback:
+  target: coding
+  condition: 任何安全相关blocker未通过
+
+skip_allowed: false
+```
+
+### G5: 测试评审
+
+```yaml
+gate_id: G5
+name: 测试评审
+after_phase: integration-testing
+before_phase: deployment
+level: critical
+description: 确认产品质量达到发布标准
+
+checklist:
+  - id: G5-01
+    item: P0/P1缺陷已全部修复
+    check_method: 缺陷清单中无未关闭的P0/P1
+    severity: blocker
+
+  - id: G5-02
+    item: 单元测试覆盖率达标
+    check_method: 核心逻辑覆盖率 >= 项目要求
+    severity: blocker
+
+  - id: G5-03
+    item: 集成测试全部通过
+    check_method: 所有测试场景执行通过
+    severity: blocker
+
+  - id: G5-04
+    item: 性能测试达标
+    check_method: API响应时间满足非功能性要求
+    severity: major
+
+  - id: G5-05
+    item: 安全测试无高危
+    check_method: 无高危和中危安全漏洞
+    severity: blocker
+
+  - id: G5-06
+    item: 回归测试通过
+    check_method: 缺陷修复后回归全部通过
+    severity: blocker
+
+  - id: G5-07
+    item: P2缺陷有处理计划
+    check_method: 每个P2缺陷有明确的处理时间和方案
+    severity: minor
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 100%
+
+rollback:
+  target: coding
+  condition: P0缺陷未修复
+  description: 返回编码阶段修复缺陷
+
+skip_allowed: false
+```
+
+### G6: 上线验证
+
+```yaml
+gate_id: G6
+name: 上线验证
+after_phase: deployment
+before_phase: null
+level: critical
+description: 确认产品上线后正常运行，流程闭环
+
+checklist:
+  - id: G6-01
+    item: 核心功能验证通过
+    check_method: 人工验证P0功能正常可用
+    severity: blocker
+
+  - id: G6-02
+    item: 性能指标正常
+    check_method: 线上API响应时间、错误率在预期范围
+    severity: blocker
+
+  - id: G6-03
+    item: 监控告警正常
+    check_method: 监控面板数据正常，告警配置生效
+    severity: major
+
+  - id: G6-04
+    item: 无P0/P1线上问题
+    check_method: 上线后观察期内无严重问题
+    severity: blocker
+
+  - id: G6-05
+    item: 用户可正常访问
+    check_method: 从用户视角验证核心流程畅通
+    severity: blocker
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 100%
+
+rollback:
+  target: deployment
+  condition: 核心功能不可用
+  description: 执行回滚方案
+
+skip_allowed: false
+```
+
+## 评审流程
+
+```
+1. AI生成当前环节的产出文档
+2. 用户审阅文档内容
+3. 对照卡点检查清单逐项评审
+4. 标记每项检查结果（通过/未通过/不适用）
+5. 汇总评审结果：
+   - 全部blocker通过 + major通过率达标 → 评审通过
+   - 存在blocker未通过 → 评审不通过，回退
+6. 评审通过 → 进入下一环节
+7. 评审不通过 → 回退到指定环节，修改后重新提交
+```
+
+## 变更记录
+
+| 日期 | 变更内容 |
+|------|---------|
+| 2026-06-23 | 初始版本，定义6个卡点门禁 |

@@ -1,0 +1,329 @@
+# 软件开发全流程 — 工具选择与经验记录
+
+> 本文件记录每个流程环节的工具选择、使用经验和最佳实践。
+> 随着项目推进持续更新，沉淀团队知识。
+
+## 环节工具映射
+
+### 1. 需求分析
+
+```yaml
+phase: requirement-analysis
+tools:
+  - name: AskUserQuestion
+    usage: |
+      交互式需求收集。通过结构化提问引导用户澄清需求。
+      建议：每次只问1-2个问题，避免信息过载。
+      用开放式问题开场，用具体场景追问。
+
+  - name: Read
+    usage: |
+      读取 .ai/product.md 了解现有产品定义。
+      读取 .ai/tech.md 了解技术约束。
+
+  - name: Write
+    usage: |
+      输出PRD文档和需求追踪矩阵到 docs/pipeline/。
+
+  - name: WebSearch
+    usage: |
+      搜索行业标准和竞品分析，辅助需求分析。
+      适用：用户对功能边界不确定时，查找行业最佳实践。
+
+  - name: /product
+    usage: |
+      如果产品定位尚未定义，先调用 /product Skill 完成产品定义。
+      /dev-pipeline 依赖 .ai/product.md 已填写。
+
+lessons:
+  - id: L-REQ-001
+    title: 需求来源要明确
+    description: |
+      原始需求可能是模糊的想法，需要通过多轮提问澄清：
+      1. 先理解"为什么要做"（背景和动机）
+      2. 再理解"做什么"（功能范围）
+      3. 最后理解"做到什么程度"（验收标准）
+    date: 2026-06-23
+
+  - id: L-REQ-002
+    title: 验收标准必须可量化
+    description: |
+      模糊的验收标准是需求评审被打回的主要原因。
+      例：❌ "系统要快" → ✅ "API响应时间P95 < 500ms"
+      例：❌ "支持搜索" → ✅ "支持按名称模糊搜索，结果分页，每页20条"
+    date: 2026-06-23
+
+  - id: L-REQ-003
+    title: 不做列表比做列表更重要
+    description: |
+      需求蔓延是项目延期的主要原因。明确"不做什么"能有效防止蔓延。
+      每个不做项要有明确原因（超出范围/MVP不需要/技术不匹配）。
+    date: 2026-06-23
+```
+
+### 2. 技术方案设计
+
+```yaml
+phase: technical-design
+tools:
+  - name: Read
+    usage: |
+      读取 .ai/tech.md、.ai/structure.md、.ai/codeRule.md。
+      读取已通过评审的PRD。
+
+  - name: /architect
+    usage: |
+      如果技术选型和架构设计尚未完成，先调用 /architect Skill。
+      /architect 完成交互式技术选型并更新 .ai/ 约束文件。
+
+  - name: Write
+    usage: |
+      输出技术方案文档、架构图、数据模型、API设计。
+
+  - name: Agent(Explore)
+    usage: |
+      探索项目现有代码结构，理解已有技术栈和模式。
+      适用：项目已有基础代码时，确保新设计与之兼容。
+
+lessons:
+  - id: L-TECH-001
+    title: 技术选型要有对比分析
+    description: |
+      每项选型至少比较2个方案，列出优劣。
+      不要因为"最新"就选择，要考虑团队熟悉度和生态成熟度。
+    date: 2026-06-23
+
+  - id: L-TECH-002
+    title: 数据模型要先于接口设计
+    description: |
+      先设计数据模型（ER图、表结构），再设计API接口。
+      数据模型是业务的核心抽象，接口是数据的操作入口。
+      数据模型不合理会导致后期大量返工。
+    date: 2026-06-23
+
+  - id: L-TECH-003
+    title: 安全方案不能事后补
+    description: |
+      在技术方案阶段就要考虑：认证方式、授权模型、数据加密、
+      输入校验策略。安全方案事后补的成本是设计阶段的10倍。
+    date: 2026-06-23
+```
+
+### 3. 详细设计
+
+```yaml
+phase: detailed-design
+tools:
+  - name: Read
+    usage: |
+      读取技术方案文档，理解架构和接口设计。
+      读取 .ai/structure.md 了解目录结构规范。
+
+  - name: Write
+    usage: |
+      输出详细设计文档和任务拆分。
+
+  - name: Agent(Plan)
+    usage: |
+      对于复杂模块，使用 Plan agent 辅助详细设计。
+      Plan agent 可以分析代码结构、识别关键文件、考虑架构权衡。
+
+  - name: Mermaid
+    usage: |
+      使用 Mermaid 语法绘制时序图、类图、状态机图。
+      直接嵌入 Markdown 文档中，无需外部工具。
+
+lessons:
+  - id: L-DETAIL-001
+    title: 任务拆分粒度1-3天
+    description: |
+      每个任务1-3天完成，太大会导致跟踪困难，太小增加管理开销。
+      任务间依赖关系要明确，避免并行开发时的冲突。
+    date: 2026-06-23
+
+  - id: L-DETAIL-002
+    title: 时序图要覆盖核心流程
+    description: |
+      至少覆盖所有P0功能的完整流程，包括正常路径和异常路径。
+      时序图是开发人员理解业务流程的主要工具。
+    date: 2026-06-23
+```
+
+### 4. 编码实现
+
+```yaml
+phase: coding
+tools:
+  - name: Write
+    usage: |
+      创建源代码文件。严格遵循 .ai/structure.md 的目录结构
+      和 .ai/codeRule.md 的代码规范。
+
+  - name: Edit
+    usage: |
+      修改已有文件。使用 Edit 而非 Write 修改文件，
+      确保只修改目标部分。
+
+  - name: Read
+    usage: |
+      读取详细设计文档，确保实现与设计一致。
+      读取已有代码，保持风格一致。
+
+  - name: Bash
+    usage: |
+      运行包管理器安装依赖。
+      运行 lint/format 工具检查代码。
+      运行测试验证功能。
+
+  - name: Agent
+    usage: |
+      对于独立模块，可以使用 Agent 并行开发。
+      注意：并行开发时使用 worktree 隔离，避免冲突。
+
+  - name: /code-review
+    usage: |
+      编码完成后，使用 /code-review Skill 进行自审。
+      在提交正式代码评审前先自行检查。
+
+lessons:
+  - id: L-CODE-001
+    title: 先写测试再写实现
+    description: |
+      对于核心逻辑，推荐 TDD：先写失败测试，再写实现使测试通过。
+      这能确保代码可测试，且逻辑正确。
+    date: 2026-06-23
+
+  - id: L-CODE-002
+    title: 每完成一个模块就自测
+    description: |
+      不要等全部写完再测。每完成一个模块/功能点就运行测试。
+      问题发现越早，修复成本越低。
+    date: 2026-06-23
+
+  - id: L-CODE-003
+    title: 遵循项目规范比个人习惯重要
+    description: |
+      严格按照 .ai/codeRule.md 编码，不要引入个人风格。
+      统一的代码风格比"更优雅"的个人风格更有价值。
+    date: 2026-06-23
+```
+
+### 5. 测试
+
+```yaml
+phase: testing
+tools:
+  - name: Bash
+    usage: |
+      运行单元测试和集成测试。
+      使用项目配置的测试框架执行。
+
+  - name: Write
+    usage: |
+      编写测试代码。测试代码同样遵循规范。
+      输出测试报告到 docs/pipeline/。
+
+  - name: Agent
+    usage: |
+      使用 Agent 辅助生成测试用例，提高覆盖率。
+      特别适合边界条件和异常路径的测试。
+
+  - name: /verify
+    usage: |
+      使用 /verify Skill 验证代码变更的实际效果。
+      启动应用并观察行为是否符合预期。
+
+lessons:
+  - id: L-TEST-001
+    title: 测试金字塔原则
+    description: |
+      单元测试(多) > 集成测试(中) > E2E测试(少)。
+      单元测试覆盖核心逻辑，集成测试验证模块交互，
+      E2E测试验证用户关键路径。
+    date: 2026-06-23
+
+  - id: L-TEST-002
+    title: 测试边界条件和异常路径
+    description: |
+      正常路径的测试最容易写，但Bug往往在边界条件和异常路径。
+      重点测试：空值、越界、并发、超时、网络异常。
+    date: 2026-06-23
+
+  - id: L-TEST-003
+    title: 缺陷要分级管理
+    description: |
+      P0: 功能完全不可用 → 必须修复
+      P1: 功能严重受损 → 必须修复
+      P2: 功能轻微受损 → 可带遗留发布
+      P3: 体验问题 → 后续版本修复
+    date: 2026-06-23
+```
+
+### 6. 部署上线
+
+```yaml
+phase: deployment
+tools:
+  - name: Bash
+    usage: |
+      执行部署命令、数据库迁移、服务启动等。
+      建议将部署步骤脚本化，避免手动操作。
+
+  - name: Write
+    usage: |
+      输出部署方案和部署记录。
+
+  - name: /verify
+    usage: |
+      部署后验证功能是否正常。
+
+  - name: WebFetch/WebSearch
+    usage: |
+      查询部署环境文档和配置指南。
+      适用：不熟悉的部署平台或工具。
+
+lessons:
+  - id: L-DEPLOY-001
+    title: 部署前必须有回滚方案
+    description: |
+      每次部署都必须有明确的回滚方案。
+      回滚方案要提前测试验证，不能只是"理论上可行"。
+    date: 2026-06-23
+
+  - id: L-DEPLOY-002
+    title: 灰度发布降低风险
+    description: |
+      如果条件允许，先部署到少量用户验证，
+      确认无问题后再全量发布。
+      对于内部系统可简化为：先部署到测试环境验证，再上生产。
+    date: 2026-06-23
+
+  - id: L-DEPLOY-003
+    title: 数据迁移要可重入
+    description: |
+      数据迁移脚本必须支持重复执行（幂等）。
+      迁移失败后可以安全重试，不会造成数据不一致。
+    date: 2026-06-23
+```
+
+## 经验记录规范
+
+新增经验记录时，请遵循以下格式：
+
+```yaml
+- id: L-{PHASE}-{SEQ}
+  title: 简明标题（10字以内）
+  description: |
+    经验描述：
+    1. 具体做法
+    2. 为什么这样做
+    3. 不这样做的后果
+  date: YYYY-MM-DD
+  source: 发现来源（项目实践/行业经验/事故复盘）
+```
+
+## 变更记录
+
+| 日期 | 变更内容 |
+|------|---------|
+| 2026-06-23 | 初始版本，定义6个环节的工具映射和15条经验 |
