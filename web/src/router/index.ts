@@ -17,6 +17,11 @@ const router = createRouter({
           redirect: '/knowledge',
         },
         {
+          path: 'tenant',
+          name: 'tenant',
+          component: () => import('@/views/tenant/TenantView.vue'),
+        },
+        {
           path: 'knowledge',
           name: 'knowledge',
           component: () => import('@/views/knowledge/KnowledgeView.vue'),

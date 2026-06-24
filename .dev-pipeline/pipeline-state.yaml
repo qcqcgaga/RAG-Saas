@@ -1,15 +1,15 @@
 # 软件开发全流程 — 流程状态跟踪
 
-> 本文件跟踪当前项目在全流程中的执行状态。
-> 每个环节完成或评审通过后更新此文件。
+> v1.1.0 — 支持 run 隔离
 
-## 当前状态
+## 当前活跃 Run
 
 ```yaml
-project_name: ""
-current_phase: ""
-overall_status: not_started  # not_started | in_progress | completed | blocked
-started_at: null
+current_run: "mvp-2026-06-24"
+project_name: "DocChat"
+current_phase: "unit-testing"
+overall_status: in_progress
+started_at: "2026-06-24"
 completed_at: null
 ```
 
@@ -18,56 +18,71 @@ completed_at: null
 ```yaml
 phases:
   requirement-analysis:
-    status: not_started  # not_started | in_progress | completed | review_failed
-    started_at: null
-    completed_at: null
-    artifacts: []
+    status: completed
+    started_at: "2026-06-24"
+    completed_at: "2026-06-24"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-prd.md
+      - docs/pipeline/mvp-2026-06-24/docchat-requirement-traceability.md
 
   requirement-review:
-    status: not_started  # not_started | passed | failed
-    reviewed_at: null
-    result: null
+    status: passed
+    reviewed_at: "2026-06-24"
+    result: passed
     issues: []
 
   technical-design:
-    status: not_started
-    started_at: null
-    completed_at: null
-    artifacts: []
+    status: completed
+    started_at: "2026-06-24"
+    completed_at: "2026-06-24"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-technical-design.md
+      - docs/pipeline/mvp-2026-06-24/docchat-architecture.md
+      - docs/pipeline/mvp-2026-06-24/docchat-data-model.md
+      - docs/pipeline/mvp-2026-06-24/docchat-api-design.md
 
   technical-review:
-    status: not_started
-    reviewed_at: null
-    result: null
+    status: passed
+    reviewed_at: "2026-06-24"
+    result: passed
     issues: []
 
   detailed-design:
-    status: not_started
-    started_at: null
-    completed_at: null
-    artifacts: []
+    status: completed
+    started_at: "2026-06-24"
+    completed_at: "2026-06-24"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-detailed-design.md
+      - docs/pipeline/mvp-2026-06-24/docchat-task-breakdown.md
 
   detailed-design-review:
-    status: not_started
-    reviewed_at: null
-    result: null
+    status: passed
+    reviewed_at: "2026-06-24"
+    result: passed
     issues: []
 
   coding:
-    status: not_started
-    started_at: null
-    completed_at: null
-    artifacts: []
+    status: completed
+    started_at: "2026-06-24"
+    completed_at: "2026-06-24"
+    artifacts:
+      - server/ (88 Java 源文件)
+      - web/ (Vue 3 + TS 管理后台)
+      - packages/chat-widget/ (IIFE 组件)
+      - docker-compose.yml
+      - docs/pipeline/mvp-2026-06-24/docchat-coding-log.md
 
   code-review:
-    status: not_started
-    reviewed_at: null
-    result: null
+    status: passed
+    reviewed_at: "2026-06-24"
+    result: passed
     issues: []
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-code-review.md
 
   unit-testing:
-    status: not_started
-    started_at: null
+    status: in_progress
+    started_at: "2026-06-24"
     completed_at: null
     artifacts: []
 
@@ -99,31 +114,59 @@ phases:
 ## 评审历史
 
 ```yaml
-review_history: []
-# 格式示例：
-# - gate_id: G1
-#   phase: requirement-review
-#   date: "2026-06-23"
-#   result: passed
-#   issues_found: 2
-#   issues_resolved: 2
-#   notes: "验收标准需要更具体，已补充"
+review_history:
+  - gate: G1
+    name: 需求评审
+    date: "2026-06-24"
+    result: passed
+    blocker_pass: "3/3"
+    major_pass: "2/2"
+    minor_pass: "1/1"
+
+  - gate: G2
+    name: 技术方案评审
+    date: "2026-06-24"
+    result: passed
+    blocker_pass: "5/5"
+    major_pass: "2/2"
+
+  - gate: G3
+    name: 详细设计评审
+    date: "2026-06-24"
+    result: passed
+    blocker_pass: "2/2"
+    major_pass: "2/2"
+    minor_pass: "1/1"
+
+  - gate: G4
+    name: 代码评审
+    date: "2026-06-24"
+    result: passed
+    blocker_pass: "6/6"
+    major_pass: "3/3"
 ```
 
 ## 回退记录
 
 ```yaml
 rollback_history: []
-# 格式示例：
-# - from_phase: technical-review
-#   to_phase: technical-design
-#   date: "2026-06-23"
-#   reason: "数据模型不完整，缺少用户-角色关联表"
-#   resolution: "补充关联表设计，重新提交评审"
+```
+
+## 历史 Run 记录
+
+> 每次 run 完成后，其摘要信息保留在此。当前活跃 run 的详情在上面。
+
+```yaml
+runs: []
 ```
 
 ## 变更记录
 
 | 日期 | 变更内容 |
 |------|---------|
-| 2026-06-23 | 初始版本 |
+| 2026-06-24 | 代码评审(G4)通过(6/6 blocker, 3/3 major)，进入单元测试 |
+| 2026-06-24 | 编码完成(23/23任务)，进入代码评审(G4) |
+| 2026-06-24 | 详细设计评审(G3)通过，进入编码 |
+| 2026-06-24 | 技术方案评审(G2)通过，进入详细设计 |
+| 2026-06-24 | 需求评审(G1)通过，进入技术方案设计 |
+| 2026-06-24 | v1.1.0 引入 run_id 隔离，当前 run: mvp-2026-06-24 |

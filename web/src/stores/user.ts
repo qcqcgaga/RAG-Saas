@@ -1,24 +1,31 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { User } from '@/types/tenant'
+import { ref, computed } from 'vue'
+import type { AuthData } from '@/types/api'
 
-/**
- * 用户状态管理
- */
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(localStorage.getItem('token') || '')
-  const user = ref<User | null>(null)
+  const userId = ref<number | null>(null)
+  const tenantId = ref<number | null>(null)
+  const role = ref<string>('')
 
-  function setToken(newToken: string) {
-    token.value = newToken
-    localStorage.setItem('token', newToken)
+  const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => role.value === 'ADMIN')
+
+  function setAuth(data: AuthData) {
+    token.value = data.token
+    userId.value = data.userId
+    tenantId.value = data.tenantId
+    role.value = data.role
+    localStorage.setItem('token', data.token)
   }
 
   function clearAuth() {
     token.value = ''
-    user.value = null
+    userId.value = null
+    tenantId.value = null
+    role.value = ''
     localStorage.removeItem('token')
   }
 
-  return { token, user, setToken, clearAuth }
+  return { token, userId, tenantId, role, isLoggedIn, isAdmin, setAuth, clearAuth }
 })

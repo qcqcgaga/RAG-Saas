@@ -26,11 +26,11 @@ description: |
 depends_on: []
 artifacts:
   - name: 产品需求文档(PRD)
-    file: docs/pipeline/{project}-prd.md
+    file: docs/pipeline/{run_id}/{project}-prd.md
     template: .dev-pipeline/templates/prd-template.md
     description: 包含需求背景、用户故事、功能列表、验收标准、非功能性要求
   - name: 需求追踪矩阵
-    file: docs/pipeline/{project}-requirement-traceability.md
+    file: docs/pipeline/{run_id}/{project}-requirement-traceability.md
     template: .dev-pipeline/templates/traceability-template.md
     description: 需求ID到功能点的追踪映射
 responsible_role: 产品经理
@@ -65,7 +65,7 @@ gate_checklist:
 review_participants: [产品经理, 技术负责人, 测试负责人]
 artifacts:
   - name: 需求评审记录
-    file: docs/pipeline/{project}-requirement-review.md
+    file: docs/pipeline/{run_id}/{project}-requirement-review.md
     template: .dev-pipeline/templates/review-record-template.md
     description: 评审意见、决议、待修改项
 ```
@@ -84,19 +84,19 @@ description: |
 depends_on: [requirement-review]
 artifacts:
   - name: 技术方案文档
-    file: docs/pipeline/{project}-technical-design.md
+    file: docs/pipeline/{run_id}/{project}-technical-design.md
     template: .dev-pipeline/templates/technical-design-template.md
     description: 架构设计、技术选型、数据模型、接口设计、安全方案
   - name: 架构图
-    file: docs/pipeline/{project}-architecture.md
+    file: docs/pipeline/{run_id}/{project}-architecture.md
     template: .dev-pipeline/templates/architecture-template.md
     description: 系统架构图（Mermaid格式）
   - name: 数据模型设计
-    file: docs/pipeline/{project}-data-model.md
+    file: docs/pipeline/{run_id}/{project}-data-model.md
     template: .dev-pipeline/templates/data-model-template.md
     description: ER图、表结构设计
   - name: API接口设计
-    file: docs/pipeline/{project}-api-design.md
+    file: docs/pipeline/{run_id}/{project}-api-design.md
     template: .dev-pipeline/templates/api-design-template.md
     description: 接口列表、请求响应格式、状态码
 responsible_role: 技术负责人/架构师
@@ -131,7 +131,7 @@ gate_checklist:
 review_participants: [架构师, 技术负责人, 高级开发, 测试负责人]
 artifacts:
   - name: 技术方案评审记录
-    file: docs/pipeline/{project}-technical-review.md
+    file: docs/pipeline/{run_id}/{project}-technical-review.md
     template: .dev-pipeline/templates/review-record-template.md
     description: 评审意见、决议、待修改项
 ```
@@ -149,11 +149,11 @@ description: |
 depends_on: [technical-review]
 artifacts:
   - name: 详细设计文档
-    file: docs/pipeline/{project}-detailed-design.md
+    file: docs/pipeline/{run_id}/{project}-detailed-design.md
     template: .dev-pipeline/templates/detailed-design-template.md
     description: 模块设计、类图、时序图、状态机、关键算法
   - name: 任务拆分与排期
-    file: docs/pipeline/{project}-task-breakdown.md
+    file: docs/pipeline/{run_id}/{project}-task-breakdown.md
     template: .dev-pipeline/templates/task-breakdown-template.md
     description: 开发任务拆分、依赖关系、工时估算、排期
 responsible_role: 开发负责人
@@ -186,7 +186,7 @@ gate_checklist:
 review_participants: [技术负责人, 高级开发, 开发人员]
 artifacts:
   - name: 详细设计评审记录
-    file: docs/pipeline/{project}-detailed-design-review.md
+    file: docs/pipeline/{run_id}/{project}-detailed-design-review.md
     template: .dev-pipeline/templates/review-record-template.md
     description: 评审意见、决议、待修改项
 ```
@@ -207,7 +207,7 @@ artifacts:
     file: src/
     description: 按项目结构规范组织的源代码
   - name: 编码日志
-    file: docs/pipeline/{project}-coding-log.md
+    file: docs/pipeline/{run_id}/{project}-coding-log.md
     template: .dev-pipeline/templates/coding-log-template.md
     description: 编码过程中的决策记录、问题记录、偏差说明
 responsible_role: 开发人员
@@ -243,7 +243,7 @@ gate_checklist:
 review_participants: [高级开发, 技术负责人]
 artifacts:
   - name: 代码评审记录
-    file: docs/pipeline/{project}-code-review.md
+    file: docs/pipeline/{run_id}/{project}-code-review.md
     template: .dev-pipeline/templates/review-record-template.md
     description: 评审意见、问题列表、修改确认
 ```
@@ -261,7 +261,7 @@ description: |
 depends_on: [code-review]
 artifacts:
   - name: 单元测试报告
-    file: docs/pipeline/{project}-unit-test-report.md
+    file: docs/pipeline/{run_id}/{project}-unit-test-report.md
     template: .dev-pipeline/templates/test-report-template.md
     description: 测试用例数、通过率、覆盖率、失败分析
   - name: 测试代码
@@ -288,15 +288,15 @@ description: |
 depends_on: [unit-testing]
 artifacts:
   - name: 集成测试报告
-    file: docs/pipeline/{project}-integration-test-report.md
+    file: docs/pipeline/{run_id}/{project}-integration-test-report.md
     template: .dev-pipeline/templates/test-report-template.md
     description: 测试场景、通过率、缺陷列表、缺陷严重度分布
   - name: 测试用例
-    file: docs/pipeline/{project}-test-cases.md
+    file: docs/pipeline/{run_id}/{project}-test-cases.md
     template: .dev-pipeline/templates/test-cases-template.md
     description: 集成测试用例集
   - name: 缺陷清单
-    file: docs/pipeline/{project}-defect-list.md
+    file: docs/pipeline/{run_id}/{project}-defect-list.md
     template: .dev-pipeline/templates/defect-list-template.md
     description: 发现的缺陷列表、状态、严重度
 responsible_role: 测试工程师
@@ -331,11 +331,11 @@ gate_checklist:
 review_participants: [测试负责人, 技术负责人, 产品经理]
 artifacts:
   - name: 测试评审记录
-    file: docs/pipeline/{project}-test-review.md
+    file: docs/pipeline/{run_id}/{project}-test-review.md
     template: .dev-pipeline/templates/review-record-template.md
     description: 评审意见、发布决策、遗留问题
   - name: 发布检查清单
-    file: docs/pipeline/{project}-release-checklist.md
+    file: docs/pipeline/{run_id}/{project}-release-checklist.md
     template: .dev-pipeline/templates/release-checklist-template.md
     description: 发布前的最终检查项
 ```
@@ -353,11 +353,11 @@ description: |
 depends_on: [test-review]
 artifacts:
   - name: 部署方案
-    file: docs/pipeline/{project}-deployment-plan.md
+    file: docs/pipeline/{run_id}/{project}-deployment-plan.md
     template: .dev-pipeline/templates/deployment-plan-template.md
     description: 部署步骤、回滚方案、监控方案
   - name: 部署记录
-    file: docs/pipeline/{project}-deployment-record.md
+    file: docs/pipeline/{run_id}/{project}-deployment-record.md
     template: .dev-pipeline/templates/deployment-record-template.md
     description: 实际部署过程记录、时间点、操作人
 responsible_role: 运维工程师/开发负责人
@@ -390,11 +390,11 @@ gate_checklist:
 review_participants: [产品经理, 技术负责人, 测试负责人]
 artifacts:
   - name: 上线验证报告
-    file: docs/pipeline/{project}-release-verification.md
+    file: docs/pipeline/{run_id}/{project}-release-verification.md
     template: .dev-pipeline/templates/release-verification-template.md
     description: 验证结果、线上指标、问题记录
   - name: 项目复盘报告
-    file: docs/pipeline/{project}-retrospective.md
+    file: docs/pipeline/{run_id}/{project}-retrospective.md
     template: .dev-pipeline/templates/retrospective-template.md
     description: 项目总结、经验教训、改进建议
 ```
@@ -430,4 +430,5 @@ graph LR
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-24 | v1.1.0 产出路径引入 {run_id} 隔离，支持多 run 归档 |
 | 2026-06-23 | 初始版本，定义13个流程环节 |

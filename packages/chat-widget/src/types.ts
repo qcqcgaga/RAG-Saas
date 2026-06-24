@@ -2,18 +2,49 @@
  * 聊天组件类型定义
  */
 
-/** 组件初始化配置 */
+/** 组件远程配置（从后端 /api/v1/widget/config 获取） */
 export interface WidgetConfig {
-  /** API Key（由租户管理员生成） */
-  apiKey: string
-  /** 后端 API 基础 URL */
-  baseUrl?: string
-  /** 品牌色（十六进制） */
-  brandColor?: string
-  /** 欢迎语 */
-  welcomeText?: string
-  /** 自定义图标 URL */
-  iconUrl?: string
-  /** 组件挂载目标（默认 body） */
-  target?: string | HTMLElement
+  brandColor: string
+  welcomeMessage: string
+  iconUrl: string | null
+  enabled: boolean
+}
+
+/** 组件初始化选项（从 script 标签 data-* 属性获取） */
+export interface ChatWidgetOptions {
+  token: string
+  apiUrl?: string
+}
+
+/** SSE token 事件 */
+export interface SseTokenEvent {
+  type: 'token'
+  content: string
+}
+
+/** SSE done 事件 */
+export interface SseDoneEvent {
+  type: 'done'
+  content: ''
+  sources: SourceItem[]
+}
+
+/** SSE error 事件 */
+export interface SseErrorEvent {
+  type: 'error'
+  content: string
+}
+
+export type SseEvent = SseTokenEvent | SseDoneEvent | SseErrorEvent
+
+/** 来源引用条目 */
+export interface SourceItem {
+  documentName: string
+  chunkIndex: number
+}
+
+/** 后端配置接口响应 */
+export interface ConfigResponse {
+  code: number
+  data: WidgetConfig
 }

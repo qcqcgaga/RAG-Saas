@@ -27,3 +27,12 @@ logging:
   level:
     root: INFO
     com.docchat: DEBUG
+
+docchat:
+  jwt:
+    secret: ${JWT_SECRET:changeme-use-env-var-in-prod}
+    expiration: ${JWT_EXPIRATION:86400}
+  storage:
+    path: ${STORAGE_PATH:./uploads}
+  milvus:
+    uri: ${MILVUS_URI:http://localhost:19530}

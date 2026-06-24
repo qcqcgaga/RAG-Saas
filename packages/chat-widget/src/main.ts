@@ -1,25 +1,14 @@
 import { ChatWidget } from './ChatWidget'
-import type { WidgetConfig } from './types'
+import './styles/widget.css'
 
-/**
- * 聊天组件入口
- *
- * 全局暴露 DocChatWidget 对象，供嵌入页面调用：
- * DocChatWidget.init({ apiKey: 'xxx', baseUrl: 'https://api.docchat.com' })
- */
-function init(config: WidgetConfig): ChatWidget {
-  const widget = new ChatWidget(config)
-  widget.mount()
-  return widget
-}
+// 从 script 标签的 data-token 属性获取配置
+const scripts = document.getElementsByTagName('script')
+const currentScript = scripts[scripts.length - 1]
+const token = currentScript?.getAttribute('data-token') || ''
+const apiUrl = currentScript?.getAttribute('data-api-url') || ''
 
-// 暴露到全局
-const DocChatWidget = { init }
-
-// 兼容直接 script 标签引入
-if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).DocChatWidget = DocChatWidget
-}
-
-export { init }
-export default DocChatWidget
+// 初始化 Widget
+new ChatWidget({
+  token,
+  apiUrl: apiUrl || undefined,
+})

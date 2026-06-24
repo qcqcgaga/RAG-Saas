@@ -1,5 +1,4 @@
 import request from '@/utils/request'
-import type { R } from '@/types/api'
 
 /**
  * 对话相关 API
@@ -9,15 +8,17 @@ export interface ChatRequest {
   question: string
 }
 
+export interface ChatSource {
+  documentTitle: string
+  content: string
+}
+
 export interface ChatMessage {
   answer: string
-  sources: Array<{
-    documentTitle: string
-    content: string
-  }>
+  sources: ChatSource[]
 }
 
 /** 发送对话 */
 export function chat(data: ChatRequest) {
-  return request.post<R<ChatMessage>>('/chat', data)
+  return request.post<any, { data: ChatMessage }>('/api/v1/chat', data)
 }

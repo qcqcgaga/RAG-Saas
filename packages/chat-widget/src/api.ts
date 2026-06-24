@@ -2,30 +2,113 @@
  * 聊天组件 API 调用封装
  */
 
-export interface ChatRequest {
-  question: string
-}
+import type { ConfigResponse, SseEvent, SourceItem } from './types'
 
-export interface ChatResponse {
-  answer: string
-  sources: Array<{
-    documentTitle: string
-    content: string
-  }>
-}
-
-/** 发送对话请求 */
-export async function chat(baseUrl: string, request: ChatRequest): Promise<ChatResponse> {
-  const response = await fetch(`${baseUrl}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Chat API error: ${response.status}`)
+/** 加载组件远程配置 */
+export async function fetchConfig(
+  apiUrl: string,
+  token: string,
+): Promise<ConfigResponse | null> {
+  try {
+    const url = `${apiUrl}/api/v1/widget/config?token=${encodeURIComponent(token)}`
+    const res = await fetch(url)
+    const data: ConfigResponse = await res.json()
+    return data
+  } catch (e) {
+    console.error('[DocChat] 加载配置失败:', e)
+    return null
   }
+}
 
-  const data = await response.json()
-  return data.data
+/** SSE 流式对话回调 */
+export interface ChatCallbacks {
+  onToken: (text: string) => void
+  onDone: (sources: SourceItem[]) => void
+  onError: (message: string) => void
+}
+
+/** 发送对话请求（SSE 流式） */
+export async function streamChat(
+  apiUrl: string,
+  token: string,
+  question: string,
+  callbacks: ChatCallbacks,
+): Promise<void> {
+  let fullText = ''
+
+  try {
+    const response = await fetch(`${apiUrl}/api/v1/chat/conversations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ question }),
+    })
+
+    if (!response.ok || !response.body) {
+      throw new Error(`请求失败: ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      // 按 \n\n 分割 SSE 事件块
+      const parts = buffer.split('\n\n')
+      buffer = parts.pop() || ''
+
+      for (const part of parts) {
+        const event = parseSseEvent(part)
+        if (!event) continue
+
+        if (event.type === 'token') {
+          fullText += event.content
+          callbacks.onToken(fullText)
+        } else if (event.type === 'done') {
+          callbacks.onDone(event.sources || [])
+        } else if (event.type === 'error') {
+          callbacks.onError(event.content)
+        }
+      }
+    }
+
+    // 处理可能残留的 buffer
+    if (buffer.trim()) {
+      const event = parseSseEvent(buffer)
+      if (event) {
+        if (event.type === 'token') {
+          fullText += event.content
+          callbacks.onToken(fullText)
+        } else if (event.type === 'done') {
+          callbacks.onDone(event.sources || [])
+        } else if (event.type === 'error') {
+          callbacks.onError(event.content)
+        }
+      }
+    }
+  } catch (e) {
+    callbacks.onError('抱歉，服务暂时不可用，请稍后重试。')
+  }
+}
+
+/** 解析单个 SSE 事件块 */
+function parseSseEvent(chunk: string): SseEvent | null {
+  const lines = chunk.split('\n')
+  for (const line of lines) {
+    if (line.startsWith('data:')) {
+      try {
+        return JSON.parse(line.substring(5).trim()) as SseEvent
+      } catch {
+        // 忽略解析错误
+      }
+    }
+  }
+  return null
 }

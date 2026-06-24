@@ -33,7 +33,7 @@ public class R<T> {
         return new R<>(0, "success", null);
     }
 
-    public static <T> R<T> fail(String errorCode, String errorMessage) {
-        return new R<>(errorCode.hashCode(), errorMessage, null);
+    public static <T> R<T> fail(int code, String msg) {
+        return new R<>(code, msg, null);
     }
 }

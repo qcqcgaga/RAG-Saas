@@ -1,61 +1,209 @@
-import type { WidgetConfig, ChatRequest, ChatResponse } from './types'
-import { chat } from './api'
-import './styles/widget.css'
+import type { ChatWidgetOptions, WidgetConfig, SourceItem } from './types'
+import { fetchConfig, streamChat } from './api'
 
-/**
- * 聊天组件主类
- *
- * 负责创建 UI、管理对话状态、调用后端 API
- */
 export class ChatWidget {
-  private config: WidgetConfig
+  private token: string
+  private apiUrl: string
+  private config: WidgetConfig | null = null
+  private isOpen = false
+  private isSending = false
   private container: HTMLElement | null = null
+  private messagesContainer: HTMLElement | null = null
+  private inputEl: HTMLInputElement | null = null
 
-  constructor(config: WidgetConfig) {
-    this.config = config
+  constructor(options: ChatWidgetOptions) {
+    this.token = options.token
+    this.apiUrl = options.apiUrl || ''
+    this.init()
   }
 
-  /** 挂载组件到页面 */
-  mount(): void {
+  private async init(): Promise<void> {
+    await this.loadConfig()
+    if (!this.config || !this.config.enabled) return
+
+    this.createDOM()
+    this.postMessage('widget:ready', {})
+  }
+
+  private async loadConfig(): Promise<void> {
+    const data = await fetchConfig(this.apiUrl, this.token)
+    if (data && data.code === 0) {
+      this.config = data.data
+    }
+  }
+
+  private createDOM(): void {
     this.container = document.createElement('div')
-    this.container.className = 'docchat-widget'
-    this.container.innerHTML = `
-      <div class="docchat-widget__header">
-        <span>${this.config.welcomeText || '有什么可以帮您？'}</span>
-        <button class="docchat-widget__close">&times;</button>
-      </div>
-      <div class="docchat-widget__body">
-        <div class="docchat-widget__messages"></div>
-      </div>
-      <div class="docchat-widget__input">
-        <input type="text" placeholder="输入您的问题..." />
-        <button>发送</button>
-      </div>
-    `
-
+    this.container.className = 'docchat-root'
     document.body.appendChild(this.container)
-    this.bindEvents()
+
+    this.createTrigger()
+    this.createChatWindow()
   }
 
-  /** 销毁组件 */
-  destroy(): void {
-    this.container?.remove()
-    this.container = null
+  private createTrigger(): void {
+    const trigger = document.createElement('div')
+    trigger.className = 'docchat-trigger'
+    trigger.style.backgroundColor = this.config!.brandColor
+
+    if (this.config!.iconUrl) {
+      trigger.innerHTML = `<img src="${this.config!.iconUrl}" alt="chat" class="docchat-trigger-icon" />`
+    } else {
+      trigger.innerHTML =
+        '<svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>'
+    }
+
+    trigger.addEventListener('click', () => this.toggle())
+    this.container!.appendChild(trigger)
   }
 
-  /** 发送消息 */
-  async sendMessage(question: string): Promise<void> {
-    const request: ChatRequest = { question }
-    const response: ChatResponse = await chat(this.config.baseUrl!, request)
-    this.appendMessage('user', question)
-    this.appendMessage('bot', response.answer)
+  private createChatWindow(): void {
+    const chatWindow = document.createElement('div')
+    chatWindow.className = 'docchat-window'
+
+    // 头部
+    const header = document.createElement('div')
+    header.className = 'docchat-header'
+    header.style.backgroundColor = this.config!.brandColor
+    header.innerHTML = `
+      <span class="docchat-header-title">在线客服</span>
+      <button class="docchat-close-btn" aria-label="关闭">&times;</button>
+    `
+    header.querySelector('.docchat-close-btn')!.addEventListener('click', () => this.toggle())
+    chatWindow.appendChild(header)
+
+    // 消息区域
+    this.messagesContainer = document.createElement('div')
+    this.messagesContainer.className = 'docchat-messages'
+
+    if (this.config!.welcomeMessage) {
+      this.addBotMessage(this.config!.welcomeMessage)
+    }
+
+    chatWindow.appendChild(this.messagesContainer)
+
+    // 输入区域
+    const inputArea = document.createElement('div')
+    inputArea.className = 'docchat-input-area'
+
+    this.inputEl = document.createElement('input')
+    this.inputEl.type = 'text'
+    this.inputEl.className = 'docchat-input'
+    this.inputEl.placeholder = '输入您的问题...'
+    this.inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !this.isSending) this.sendMessage()
+    })
+    inputArea.appendChild(this.inputEl)
+
+    const sendBtn = document.createElement('button')
+    sendBtn.className = 'docchat-send-btn'
+    sendBtn.style.backgroundColor = this.config!.brandColor
+    sendBtn.textContent = '发送'
+    sendBtn.addEventListener('click', () => {
+      if (!this.isSending) this.sendMessage()
+    })
+    inputArea.appendChild(sendBtn)
+
+    chatWindow.appendChild(inputArea)
+    this.container!.appendChild(chatWindow)
   }
 
-  private bindEvents(): void {
-    // TODO: 绑定关闭按钮、发送按钮、回车键事件
+  private toggle(): void {
+    this.isOpen = !this.isOpen
+    const chatWindow = this.container!.querySelector('.docchat-window') as HTMLElement
+    const trigger = this.container!.querySelector('.docchat-trigger') as HTMLElement
+
+    if (this.isOpen) {
+      chatWindow.classList.add('docchat-window--open')
+      trigger.classList.add('docchat-trigger--hidden')
+      if (this.inputEl) this.inputEl.focus()
+    } else {
+      chatWindow.classList.remove('docchat-window--open')
+      trigger.classList.remove('docchat-trigger--hidden')
+    }
   }
 
-  private appendMessage(role: 'user' | 'bot', content: string): void {
-    // TODO: 渲染消息到 DOM
+  private async sendMessage(): Promise<void> {
+    if (!this.inputEl || !this.inputEl.value.trim()) return
+    const question = this.inputEl.value.trim()
+    this.inputEl.value = ''
+    this.isSending = true
+
+    this.addUserMessage(question)
+    const botMsgEl = this.addBotMessage('', true)
+
+    await streamChat(this.apiUrl, this.token, question, {
+      onToken: (text: string) => {
+        this.updateBotMessage(botMsgEl, text)
+      },
+      onDone: (sources: SourceItem[]) => {
+        this.removeLoading(botMsgEl)
+        if (sources.length > 0) {
+          this.addSources(botMsgEl, sources)
+        }
+        this.isSending = false
+      },
+      onError: (message: string) => {
+        this.updateBotMessage(botMsgEl, message)
+        this.removeLoading(botMsgEl)
+        this.isSending = false
+      },
+    })
+  }
+
+  private addUserMessage(text: string): void {
+    const msg = document.createElement('div')
+    msg.className = 'docchat-message docchat-user-message'
+    msg.textContent = text
+    this.messagesContainer!.appendChild(msg)
+    this.scrollToBottom()
+  }
+
+  private addBotMessage(text: string, loading = false): HTMLElement {
+    const msg = document.createElement('div')
+    msg.className = 'docchat-message docchat-bot-message'
+    if (loading) {
+      msg.innerHTML = '<span class="docchat-loading"><span class="docchat-loading-dot"></span><span class="docchat-loading-dot"></span><span class="docchat-loading-dot"></span></span>'
+    } else {
+      msg.textContent = text
+    }
+    this.messagesContainer!.appendChild(msg)
+    this.scrollToBottom()
+    return msg
+  }
+
+  private updateBotMessage(el: HTMLElement, text: string): void {
+    this.removeLoading(el)
+    el.textContent = text
+    this.scrollToBottom()
+  }
+
+  private removeLoading(el: HTMLElement): void {
+    const loadingEl = el.querySelector('.docchat-loading')
+    if (loadingEl) loadingEl.remove()
+  }
+
+  private addSources(el: HTMLElement, sources: SourceItem[]): void {
+    const sourcesEl = document.createElement('div')
+    sourcesEl.className = 'docchat-sources'
+    sourcesEl.innerHTML = '<div class="docchat-sources-title">来源引用</div>'
+    for (const s of sources) {
+      const sourceEl = document.createElement('div')
+      sourceEl.className = 'docchat-source-item'
+      sourceEl.textContent = `${s.documentName} (第${s.chunkIndex}段)`
+      sourcesEl.appendChild(sourceEl)
+    }
+    el.appendChild(sourcesEl)
+    this.scrollToBottom()
+  }
+
+  private scrollToBottom(): void {
+    if (this.messagesContainer) {
+      this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight
+    }
+  }
+
+  private postMessage(type: string, data: Record<string, unknown>): void {
+    window.parent.postMessage({ type, source: 'docchat-widget', ...data }, '*')
   }
 }

@@ -1,54 +1,74 @@
 package com.docchat.common.response;
 
+import com.docchat.common.exception.BizException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * 错误码常量定义
  *
- * 格式：{MODULE}_{ERROR_TYPE}
- * 示例：TENANT_NOT_FOUND、KNOWLEDGE_UPLOAD_FAILED
- *
- * 每个模块可在此定义通用错误码，模块专属错误码建议在模块内定义。
+ * 数字编码规则：
+ * - 通用：40000/40100/40300/40400/40900/50000
+ * - AUTH 模块：401xx
+ * - MEMBER 模块：403xx
+ * - KNOWLEDGE 模块：404xx
+ * - TASK 模块：405xx
+ * - CHAT 模块：406xx
+ * - WIDGET 模块：407xx
  */
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
 
-    // ===== 通用错误码 =====
-    SYSTEM_ERROR("SYSTEM_ERROR", "系统繁忙，请稍后重试"),
-    PARAM_INVALID("PARAM_INVALID", "参数校验失败"),
-    UNAUTHORIZED("UNAUTHORIZED", "未登录或登录已过期"),
-    FORBIDDEN("FORBIDDEN", "无权限访问"),
-    NOT_FOUND("NOT_FOUND", "资源不存在"),
+    // 通用
+    SUCCESS(0, "success"),
+    PARAM_INVALID(40000, "参数校验失败"),
+    UNAUTHORIZED(40100, "未认证"),
+    FORBIDDEN(40300, "无权限"),
+    NOT_FOUND(40400, "资源不存在"),
+    CONFLICT(40900, "资源冲突"),
+    INTERNAL_ERROR(50000, "服务器内部错误"),
 
-    // ===== 租户模块 =====
-    TENANT_NOT_FOUND("TENANT_NOT_FOUND", "租户不存在"),
-    TENANT_EXPIRED("TENANT_EXPIRED", "租户已过期"),
+    // AUTH 模块
+    AUTH_LOGIN_FAILED(40101, "邮箱或密码错误"),
+    AUTH_ACCOUNT_LOCKED(40102, "账户已锁定，请30分钟后重试"),
+    AUTH_ACCOUNT_DISABLED(40103, "账户已禁用"),
+    AUTH_EMAIL_EXISTS(40104, "邮箱已注册"),
 
-    // ===== 知识库模块 =====
-    KNOWLEDGE_NOT_FOUND("KNOWLEDGE_NOT_FOUND", "文档不存在"),
-    KNOWLEDGE_UPLOAD_FAILED("KNOWLEDGE_UPLOAD_FAILED", "文档上传失败"),
-    KNOWLEDGE_TYPE_NOT_ALLOWED("KNOWLEDGE_TYPE_NOT_ALLOWED", "不支持的文件类型"),
+    // MEMBER 模块
+    MEMBER_ALREADY_EXISTS(40301, "该邮箱已是团队成员"),
+    MEMBER_INVITE_FORBIDDEN(40302, "无权邀请成员"),
 
-    // ===== 任务模块 =====
-    TASK_NOT_FOUND("TASK_NOT_FOUND", "任务不存在"),
-    TASK_PROCESSING_FAILED("TASK_PROCESSING_FAILED", "任务处理失败"),
+    // KNOWLEDGE 模块
+    KNOWLEDGE_FILE_TYPE_NOT_ALLOWED(40401, "不支持的文件类型"),
+    KNOWLEDGE_FILE_TOO_LARGE(40402, "文件大小超过限制"),
+    KNOWLEDGE_FILE_HEADER_MISMATCH(40403, "文件头与扩展名不匹配"),
+    KNOWLEDGE_DOCUMENT_NOT_FOUND(40404, "文档不存在"),
+    KNOWLEDGE_DOCUMENT_LIMIT_EXCEEDED(40405, "文档数量超过限制"),
 
-    // ===== 对话模块 =====
-    CHAT_KNOWLEDGE_EMPTY("CHAT_KNOWLEDGE_EMPTY", "知识库为空，无法对话"),
+    // TASK 模块
+    TASK_NOT_FOUND(40500, "任务不存在"),
+    TASK_NOT_FAILED(40501, "任务未失败，无法重试"),
+    TASK_MAX_RETRY_EXCEEDED(40502, "已达最大重试次数"),
 
-    // ===== 聊天组件模块 =====
-    WIDGET_NOT_FOUND("WIDGET_NOT_FOUND", "聊天组件配置不存在"),
+    // CHAT 模块
+    CHAT_QUESTION_EMPTY(40601, "问题不能为空"),
+    CHAT_QUESTION_TOO_LONG(40602, "问题超过500字符"),
+    CHAT_WIDGET_DISABLED(40603, "聊天组件已禁用"),
+    CHAT_LLM_UNAVAILABLE(40604, "LLM服务暂时不可用"),
 
-    // ===== API Key 模块 (V1) =====
-    APIKEY_NOT_FOUND("APIKEY_NOT_FOUND", "API Key 不存在"),
-    APIKEY_REVOKED("APIKEY_REVOKED", "API Key 已吊销"),
-    APIKEY_LIMIT_EXCEEDED("APIKEY_LIMIT_EXCEEDED", "调用次数已达上限"),
+    // WIDGET 模块
+    WIDGET_TOKEN_INVALID(40701, "Widget Token无效"),
+    WIDGET_NOT_FOUND(40702, "聊天组件配置不存在");
 
-    // ===== 评测模块 (V1) =====
-    EVAL_NOT_FOUND("EVAL_NOT_FOUND", "评测集不存在");
+    private final int code;
+    private final String msg;
 
-    private final String code;
-    private final String message;
+    public BizException asBizException() {
+        return new BizException(this.code, this.msg);
+    }
+
+    public BizException asBizException(String detail) {
+        return new BizException(this.code, this.msg + ": " + detail);
+    }
 }

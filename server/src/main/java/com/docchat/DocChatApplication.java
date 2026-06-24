@@ -2,6 +2,7 @@ package com.docchat;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
  * DocChat 应用入口
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 上传文档 → 自动切分向量化 → RAG 对话 → 嵌入聊天组件
  */
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class DocChatApplication {
 
     public static void main(String[] args) {

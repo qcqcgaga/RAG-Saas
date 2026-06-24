@@ -1,5 +1,7 @@
 package com.docchat.common.exception;
 
+import com.docchat.common.response.ErrorCode;
+
 /**
  * 可预期的业务异常
  *
@@ -8,11 +10,19 @@ package com.docchat.common.exception;
  */
 public class BizException extends BaseException {
 
-    public BizException(String errorCode, String errorMessage) {
-        super(errorCode, errorMessage);
+    public BizException(int code, String msg) {
+        super(code, msg);
     }
 
-    public BizException(String errorCode, String errorMessage, Throwable cause) {
-        super(errorCode, errorMessage, cause);
+    public BizException(int code, String msg, Throwable cause) {
+        super(code, msg, cause);
+    }
+
+    public BizException(ErrorCode errorCode) {
+        super(errorCode.getCode(), errorCode.getMsg());
+    }
+
+    public BizException(ErrorCode errorCode, String detail) {
+        super(errorCode.getCode(), errorCode.getMsg() + ": " + detail);
     }
 }

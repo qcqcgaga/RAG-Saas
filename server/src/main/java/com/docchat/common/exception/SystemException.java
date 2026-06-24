@@ -1,5 +1,7 @@
 package com.docchat.common.exception;
 
+import com.docchat.common.response.ErrorCode;
+
 /**
  * 系统级异常
  *
@@ -8,11 +10,19 @@ package com.docchat.common.exception;
  */
 public class SystemException extends BaseException {
 
-    public SystemException(String errorCode, String errorMessage) {
-        super(errorCode, errorMessage);
+    public SystemException(int code, String msg) {
+        super(code, msg);
     }
 
-    public SystemException(String errorCode, String errorMessage, Throwable cause) {
-        super(errorCode, errorMessage, cause);
+    public SystemException(int code, String msg, Throwable cause) {
+        super(code, msg, cause);
+    }
+
+    public SystemException(ErrorCode errorCode) {
+        super(errorCode.getCode(), errorCode.getMsg());
+    }
+
+    public SystemException(ErrorCode errorCode, Throwable cause) {
+        super(errorCode.getCode(), errorCode.getMsg(), cause);
     }
 }

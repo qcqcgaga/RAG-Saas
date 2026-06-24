@@ -1,37 +1,8 @@
-/** 租户相关类型定义 */
+/**
+ * 租户相关类型定义
+ *
+ * 类型已迁移至 api.d.ts，请从 @/types/api 导入
+ */
 
-export interface Tenant {
-  id: number
-  name: string
-  slug: string
-  status: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface User {
-  id: number
-  email: string
-  displayName: string
-  tenantId: number
-  role: 'admin' | 'member' | 'readonly'
-  status: string
-}
-
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface LoginResponse {
-  token: string
-  user: User
-}
-
-export interface RegisterRequest {
-  tenantName: string
-  slug: string
-  email: string
-  password: string
-  displayName?: string
-}
+// Re-export from api.d.ts for backward compatibility
+export type { TenantInfo as Tenant, MemberInfo, AuthData } from '@/types/api'

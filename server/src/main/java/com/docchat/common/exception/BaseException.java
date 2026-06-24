@@ -11,18 +11,18 @@ import lombok.Getter;
 @Getter
 public class BaseException extends RuntimeException {
 
-    private final String errorCode;
-    private final String errorMessage;
+    private final int code;
+    private final String msg;
 
-    public BaseException(String errorCode, String errorMessage) {
-        super(errorMessage);
-        this.errorCode = errorCode;
-        this.errorMessage = errorMessage;
+    public BaseException(int code, String msg) {
+        super(msg);
+        this.code = code;
+        this.msg = msg;
     }
 
-    public BaseException(String errorCode, String errorMessage, Throwable cause) {
-        super(errorMessage, cause);
-        this.errorCode = errorCode;
-        this.errorMessage = errorMessage;
+    public BaseException(int code, String msg, Throwable cause) {
+        super(msg, cause);
+        this.code = code;
+        this.msg = msg;
     }
 }
