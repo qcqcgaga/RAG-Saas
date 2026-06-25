@@ -1,6 +1,7 @@
 -- V3: 完善数据模型，匹配详细设计
 
 -- 1. 修改 tenants 表
+ALTER TABLE tenants ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE tenants ALTER COLUMN status TYPE SMALLINT USING CASE WHEN status = 'active' THEN 1 ELSE 0 END;
 ALTER TABLE tenants ALTER COLUMN status SET DEFAULT 1;
 
@@ -9,6 +10,7 @@ ALTER TABLE users DROP CONSTRAINT users_email_key;
 CREATE UNIQUE INDEX uk_users_tenant_email ON users(tenant_id, email);
 ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(20);
 ALTER TABLE users ALTER COLUMN role SET DEFAULT 'MEMBER';
+ALTER TABLE users ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE users ALTER COLUMN status TYPE SMALLINT USING CASE WHEN status = 'active' THEN 1 ELSE 0 END;
 ALTER TABLE users ALTER COLUMN status SET DEFAULT 1;
 

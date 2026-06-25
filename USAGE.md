@@ -1,7 +1,7 @@
 # DocChat Agent 使用手册
 
 > 本手册面向项目所有者，指导如何使用 Claude Code + 项目 Skill 体系，从零到一构建 DocChat 产品。
-> 最后更新：2026-06-24
+> 最后更新：2026-06-25
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### 1.1 项目 Skill 总览
 
-本项目在 `.claude/commands/` 下维护 7 个自定义 Skill，覆盖从产品定义到复盘优化的完整闭环：
+本项目在 `.claude/commands/` 下维护 8 个自定义 Skill，覆盖从产品定义到复盘优化的完整闭环：
 
 | Skill | 命令 | 定位 | 类型 |
 |-------|------|------|------|
@@ -30,6 +30,7 @@
 | 开发全流程引擎 | `/dev-pipeline` | 需求→设计→编码→测试→部署全流程 | 主流程 |
 | 迭代复盘与优化 | `/retrospect` | 版本复盘、约束审视、技术债治理、质量趋势、Skill优化 | 主流程 |
 | 文档体系构建 | `/build_doc_sys` | 贯穿全生命周期的 LLM 友好文档体系 | 跨阶段支撑 |
+| 文档刷新与提交建议 | `/refresh-docs` | 根据git变更刷新USAGE.md/README.md，生成commit-message | 跨阶段支撑 |
 | Skill 编写专家 | `/create_skill` | 创建/编辑/验证自定义 Skill | 专项工具 |
 | Maven 包管理专家 | `/maven-expert` | Maven 依赖诊断与修复 | 专项工具 |
 
@@ -61,6 +62,11 @@
 │   ┌──────────────────────────────────────────────────────────────────────┐  │
 │   │  /build_doc_sys — 贯穿全生命周期的文档体系支撑                         │  │
 │   │  架构后开发前（新项目模式）· 开发中按需（增量模式）· 交付后（文档模式）  │  │
+│   └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│   ┌──────────────────────────────────────────────────────────────────────┐  │
+│   │  /refresh-docs — git变更驱动的文档同步 + commit-message生成           │  │
+│   │  每次提交前调用，自动刷新 USAGE.md / README.md                        │  │
 │   └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │   ┌──────────────┐  ┌──────────────┐                                       │
@@ -221,7 +227,7 @@ Agent: 输出 .ai/tech.md + .ai/structure.md + .ai/codeRule.md
 
 **核心产出**：`docs/pipeline/{run_id}/` 下的全流程文档 + 代码
 
-**13 个流程环节 + 6 个卡点门禁**：
+**14 个流程环节 + 7 个卡点门禁**：
 
 ```
 [1] 需求分析
@@ -244,19 +250,23 @@ Agent: 输出 .ai/tech.md + .ai/structure.md + .ai/codeRule.md
      │
 [10] 集成测试
      │
-[11] 测试评审 ★ G5 卡点
+[11] 人工测试 ─── 测试前必须调用 /user-manual 刷新用户手册
      │
-[12] 部署上线
+[12] 测试评审 ★ G5 卡点
      │
-[13] 上线验证 ★ G6 卡点 → 生成复盘报告
+[13] 部署上线
+     │
+[14] 上线验证 ★ G6 卡点 → 生成流程内复盘报告
 ```
+
+> 💡 **人工测试环节**是 MVP 部署复盘后新增的环节。自动化测试全绿≠系统可用，人工测试以用户故事为单位验证端到端流程，是自动化测试的必要补充。
 
 **关键机制**：
 
 | 机制 | 说明 |
 |------|------|
 | **用户是监督者** | AI 生成文档/代码，每个环节产出供你评审，通过后才推进 |
-| **卡点不可跳过** | 6 个门禁必须通过评审才能继续 |
+| **卡点不可跳过** | 7 个门禁必须通过评审才能继续 |
 | **断点续跑** | 状态写入 `.dev-pipeline/pipeline-state.yaml`，中断后可恢复 |
 | **多 run 隔离** | 每次执行有独立 run_id（如 `mvp-2026-06-24`），产出互不干扰 |
 | **可回退** | 评审不通过时回退到指定环节，不是失败是质量保障 |
@@ -306,9 +316,11 @@ docs/pipeline/mvp-2026-06-24/
 ├── docchat-task-breakdown.md           # 任务拆分与排期
 ├── docchat-detailed-design-review.md   # 详细设计评审
 ├── docchat-coding-log.md               # 编码日志
+├── docchat-build-verification.md       # 编译构建验证记录
 ├── docchat-code-review.md              # 代码评审记录
 ├── docchat-unit-test-report.md         # 单元测试报告
 ├── docchat-integration-test-report.md  # 集成测试报告
+├── docchat-manual-test-guide.md        # 人工测试引导文档
 ├── docchat-test-cases.md               # 测试用例
 ├── docchat-defect-list.md              # 缺陷清单
 ├── docchat-test-review.md              # 测试评审记录
@@ -316,7 +328,7 @@ docs/pipeline/mvp-2026-06-24/
 ├── docchat-deployment-plan.md          # 部署方案
 ├── docchat-deployment-record.md        # 部署记录
 ├── docchat-release-verification.md     # 上线验证报告
-└── docchat-retrospective.md            # 复盘报告
+└── docchat-retrospective.md            # 流程内复盘报告
 ```
 
 ---
@@ -487,14 +499,14 @@ Phase 5: Skill 体系优化
 | 输出 | `docs/pipeline/{run_id}/` 全流程文档 + 代码 |
 | 交互方式 | 环节产出评审，卡点逐项确认 |
 | 上游 Skill | `/product` + `/architect` |
-| 内嵌协作 | `/code-review`（代码评审环节）+ `/verify`（部署验证环节） |
+| 内嵌协作 | `/code-review`（代码评审环节）+ `/verify`（部署验证环节）+ `/user-manual`（人工测试环节） |
 
 **元数据文件**：
 
 | 文件 | 用途 |
 |------|------|
-| `.dev-pipeline/phases.yaml` | 13 个环节定义（依赖关系、产出物） |
-| `.dev-pipeline/gates.yaml` | 6 个卡点定义（检查清单、通过条件） |
+| `.dev-pipeline/phases.yaml` | 14 个环节定义（依赖关系、产出物） |
+| `.dev-pipeline/gates.yaml` | 7 个卡点定义（检查清单、通过条件） |
 | `.dev-pipeline/tools-and-lessons.yaml` | 工具选择和经验记录 |
 | `.dev-pipeline/pipeline-state.yaml` | 流程状态跟踪（当前环节、评审历史） |
 | `.dev-pipeline/templates/` | 各环节文档模板 |
@@ -686,6 +698,9 @@ Phase 5: 验证与报告（编译/测试/依赖树/安全审计）
 |------|------|------|
 | ✅ 补充 `/retrospect` Skill | 已完成 | 5 维度复盘 + 手动/流程衔接双触发，主流程闭环完整 |
 | ✅ `/build_doc_sys` 跨阶段定位 | 已完成 | 从"单一阶段"调整为"贯穿全生命周期的支撑能力"，明确 4 个介入时机 |
+| ✅ 新增人工测试环节 | 已完成 | MVP 部署复盘后新增，自动化测试全绿≠系统可用，人工测试以用户故事为单位验证端到端流程 |
+| ✅ G4 卡点补强 | 已完成 | 新增 G4-10(编译构建通过) + G4-11(应用可正常启动) 两个 blocker 项 |
+| ✅ 新增 `/refresh-docs` Skill | 已完成 | git 变更驱动文档同步 + commit-message 生成，每次提交前调用 |
 
 ### 7.2 待演进
 
@@ -712,6 +727,7 @@ Phase 5: 验证与报告（编译/测试/依赖树/安全审计）
 │   ← ← ← ← ← ← ← ← ← ←  反馈闭环  ← ← ← ← ← ← ← ← ← ← ← ←    │
 │                                                                      │
 │   /build_doc_sys — 文档体系贯穿全生命周期                              │
+│   /refresh-docs — git变更驱动文档同步+提交建议                          │
 │   /maven-expert  — 依赖健康随时守护                                   │
 │   /create_skill  — Skill 体系持续演进                                 │
 │                                                                      │
@@ -734,5 +750,6 @@ Phase 5: 验证与报告（编译/测试/依赖树/安全审计）
 | `/retrospect dimension=xxx` | 指定复盘维度 | 同上 |
 | `/retrospect depth=quick` | 快扫复盘 | 同上 |
 | `/build_doc_sys` | 构建 LLM 友好文档体系 | 项目有源码或 PRD |
+| `/refresh-docs` | 根据git变更刷新文档并生成commit-message | 有未提交的代码变更 |
 | `/maven-expert` | Maven 依赖诊断与修复 | 项目有 pom.xml |
 | `/create_skill` | 创建/编辑/验证 Skill | 无 |

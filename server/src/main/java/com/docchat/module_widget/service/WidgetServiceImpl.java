@@ -87,10 +87,11 @@ public class WidgetServiceImpl implements WidgetService {
     }
 
     private WidgetConfig createDefaultConfig(Long tenantId) {
-        return WidgetConfig.builder()
-            .tenantId(tenantId)
-            .widgetToken(generateToken())
-            .build();
+        WidgetConfig config = new WidgetConfig();
+        config.setTenantId(tenantId);
+        config.setWidgetToken(generateToken());
+        // @PrePersist 会设置 brandColor/welcomeMessage/enabled 默认值
+        return config;
     }
 
     private String generateToken() {

@@ -1,16 +1,14 @@
 package com.docchat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * 基础上下文加载测试
  *
  * 验证 Spring 应用上下文可以正常启动。
- * 集成测试需配合 TestContainers，骨架阶段仅验证上下文加载。
+ * 继承 BaseIntegrationTest 获取 H2 + MockBean 配置。
  */
-@SpringBootTest
-class DocChatApplicationTest {
+class DocChatApplicationTest extends BaseIntegrationTest {
 
     @Test
     void contextLoads() {

@@ -7,10 +7,10 @@
 ```yaml
 current_run: "mvp-2026-06-24"
 project_name: "DocChat"
-current_phase: "unit-testing"
+current_phase: "manual-testing"
 overall_status: in_progress
 started_at: "2026-06-24"
-completed_at: null
+completed_at: "2026-06-25"
 ```
 
 ## 环节执行记录
@@ -76,39 +76,65 @@ phases:
     status: passed
     reviewed_at: "2026-06-24"
     result: passed
-    issues: []
+    issues:
+      - "注册接口返回系统繁忙(待集成测试修复)"
     artifacts:
       - docs/pipeline/mvp-2026-06-24/docchat-code-review.md
+      - docs/pipeline/mvp-2026-06-24/docchat-build-verification.md
 
   unit-testing:
-    status: in_progress
+    status: completed
     started_at: "2026-06-24"
-    completed_at: null
-    artifacts: []
+    completed_at: "2026-06-24"
+    artifacts:
+      - server/src/test/ (6 test classes, 73 test cases)
+      - docs/pipeline/mvp-2026-06-24/docchat-unit-test-report.md
 
   integration-testing:
-    status: not_started
-    started_at: null
+    status: completed
+    started_at: "2026-06-24"
+    completed_at: "2026-06-24"
+    artifacts:
+      - server/src/test/java/com/docchat/BaseIntegrationTest.java
+      - server/src/test/java/com/docchat/module_tenant/controller/AuthControllerIT.java
+      - server/src/test/java/com/docchat/module_tenant/controller/TenantControllerIT.java
+      - server/src/test/java/com/docchat/module_knowledge/controller/KnowledgeControllerIT.java
+      - server/src/test/java/com/docchat/module_task/controller/TaskControllerIT.java
+      - server/src/test/java/com/docchat/module_widget/controller/WidgetControllerIT.java
+
+  manual-testing:
+    status: in_progress
+    started_at: "2026-06-25"
     completed_at: null
     artifacts: []
+    notes: "追加人工测试 — 复盘后补充，对已完成流程追加真实环境验证"
 
   test-review:
-    status: not_started
-    reviewed_at: null
-    result: null
-    issues: []
+    status: passed
+    reviewed_at: "2026-06-24"
+    result: passed
+    issues:
+      - "G5-04性能测试有条件通过，待部署后验证"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-test-review.md
+      - docs/pipeline/mvp-2026-06-24/docchat-release-checklist.md
 
   deployment:
-    status: not_started
-    started_at: null
-    completed_at: null
-    artifacts: []
+    status: completed
+    started_at: "2026-06-25"
+    completed_at: "2026-06-25"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-deployment-plan.md
+      - docs/pipeline/mvp-2026-06-24/docchat-deployment-record.md
 
   release-verification:
-    status: not_started
-    reviewed_at: null
-    result: null
-    issues: []
+    status: passed
+    reviewed_at: "2026-06-25"
+    result: passed
+    issues:
+      - "G6-02性能测试待后续压测验证"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-release-verification.md
 ```
 
 ## 评审历史
@@ -142,14 +168,27 @@ review_history:
     name: 代码评审
     date: "2026-06-24"
     result: passed
-    blocker_pass: "6/6"
+    blocker_pass: "8/8"
     major_pass: "3/3"
+    notes: "含新增G4-10编译构建+G4-11应用启动；注册接口报系统繁忙(待后续修复)"
+  - gate: G6
+    name: 上线验证
+    date: "2026-06-25"
+    result: passed
+    blocker_pass: "5/5"
+    notes: "核心功能全部验证通过，性能测试待后续压测"
 ```
 
 ## 回退记录
 
 ```yaml
-rollback_history: []
+rollback_history:
+  - gate: G4
+    name: 代码评审
+    date: "2026-06-24"
+    reason: "G4检查清单缺少编译构建通过(G4-10)和应用启动验证(G4-11)两个blocker项，且基础设施(PostgreSQL/Redis/Milvus)未就绪，应用无法启动"
+    rollback_to: coding
+    action: "1.补强gates.yaml和phases.yaml 2.安装Docker Desktop 3.docker compose up启动基础设施 4.验证应用启动 5.重新执行G4评审"
 ```
 
 ## 历史 Run 记录
@@ -164,6 +203,14 @@ runs: []
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-25 | 新增manual-testing环节（复盘改进） |
+| 2026-06-25 | G6上线验证通过(5/5 blocker)，流程完成，生成复盘报告 |
+| 2026-06-25 | MVP 0.1.0 Docker Compose 部署完成，7个服务全部启动 |
+| 2026-06-24 | G5测试评审通过(6/6 blocker+1/1 major有条件)，进入部署上线 |
+| 2026-06-24 | 集成测试完成(5类53用例全通过)，进入测试评审(G5) |
+| 2026-06-24 | 单元测试完成(6类73用例全通过)，进入集成测试 |
+| 2026-06-24 | G4代码评审重新通过(8/8 blocker含新增G4-10编译构建+G4-11应用启动，3/3 major)，进入单元测试 |
+| 2026-06-24 | G4代码评审回退：补强检查清单（+G4-10编译构建通过、+G4-11应用启动验证），重新评审 |
 | 2026-06-24 | 代码评审(G4)通过(6/6 blocker, 3/3 major)，进入单元测试 |
 | 2026-06-24 | 编码完成(23/23任务)，进入代码评审(G4) |
 | 2026-06-24 | 详细设计评审(G3)通过，进入编码 |

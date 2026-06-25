@@ -1,0 +1,50 @@
+# 集成测试专用配置
+# 使用 H2 内存数据库（PostgreSQL 兼容模式），无需 Docker
+# 跳过 Flyway 迁移（H2 与 PG 的 DDL 语法有差异），改用 JPA ddl-auto 自动建表
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:docchat_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: false
+
+  h2:
+    console:
+      enabled: false
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # Redis 配置（MockBean 会覆盖，但自动配置需要有效值避免启动失败）
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+docchat:
+  jwt:
+    secret: test-only-secret-key-must-be-at-least-32-characters!!
+    expiration: 86400
+  storage:
+    path: ${java.io.tmpdir}/docchat-test-uploads
+  milvus:
+    uri: http://localhost:19530
+
+logging:
+  level:
+    root: WARN
+    com.docchat: DEBUG

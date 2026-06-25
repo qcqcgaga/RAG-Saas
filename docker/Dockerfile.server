@@ -5,8 +5,9 @@ WORKDIR /app
 COPY server/target/docchat-server-0.1.0-SNAPSHOT.jar app.jar
 
 ENV JAVA_OPTS="-Xms256m -Xmx512m"
-ENV JWT_SECRET=changeme-in-production
+ENV JWT_SECRET=changeme-use-env-var-in-prod-must-be-32chars!!
 ENV STORAGE_PATH=/app/uploads
+ENV SPRING_PROFILES_ACTIVE=prod,console-log
 
 EXPOSE 8080
 

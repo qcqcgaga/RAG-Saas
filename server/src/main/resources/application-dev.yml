@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/docchat
     username: docchat
-    password: docchat_dev
+    password: ${POSTGRES_PASSWORD:-docchat123}
     driver-class-name: org.postgresql.Driver
 
   flyway:

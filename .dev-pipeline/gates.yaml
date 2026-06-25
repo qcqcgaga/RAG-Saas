@@ -238,13 +238,23 @@ checklist:
     check_method: 用户内容转义处理
     severity: blocker
 
+  - id: G4-10
+    item: 项目编译构建通过
+    check_method: 后端 mvn compile 成功、前端 vue-tsc --noEmit 无错误、组件 vite build 成功
+    severity: blocker
+
+  - id: G4-11
+    item: 应用可正常启动
+    check_method: Spring Boot 应用启动无报错（至少到达就绪状态），无 Bean 注入失败
+    severity: blocker
+
 pass_criteria:
   all_blocker_pass: true
   major_pass_rate: 80%
 
 rollback:
   target: coding
-  condition: 任何安全相关blocker未通过
+  condition: 任何安全相关blocker未通过，或编译构建/启动失败
 
 skip_allowed: false
 ```
@@ -254,7 +264,7 @@ skip_allowed: false
 ```yaml
 gate_id: G5
 name: 测试评审
-after_phase: integration-testing
+after_phase: manual-testing
 before_phase: deployment
 level: critical
 description: 确认产品质量达到发布标准
@@ -303,6 +313,59 @@ rollback:
   target: coding
   condition: P0缺陷未修复
   description: 返回编码阶段修复缺陷
+
+skip_allowed: false
+```
+
+### G5.5: 人工测试评审
+
+```yaml
+gate_id: G5.5
+name: 人工测试评审
+after_phase: manual-testing
+before_phase: test-review
+level: critical
+description: |
+  确认人工测试环节中所有P0/P1用户故事验证通过，发现的问题已修复。
+  人工测试评审是测试评审(G5)的前置条件，确保G5评审时有真实的人工测试数据支撑。
+  注意：人工测试评审与G5测试评审的区别——
+  G5.5聚焦"用户故事级别的端到端验证结果"，
+  G5聚焦"整体测试质量是否达到发布标准（含自动化+人工测试结果汇总）"。
+
+checklist:
+  - id: G5.5-01
+    item: 所有P0用户故事验证通过
+    check_method: 人工测试报告中所有P0用户故事状态为"通过"
+    severity: blocker
+
+  - id: G5.5-02
+    item: 所有P1用户故事验证通过
+    check_method: 人工测试报告中所有P1用户故事状态为"通过"
+    severity: blocker
+
+  - id: G5.5-03
+    item: 人工测试中发现的问题已修复并验证
+    check_method: 人工测试报告中所有问题状态为"已修复并验证"
+    severity: blocker
+
+  - id: G5.5-04
+    item: 用户体验无明显障碍
+    check_method: 无阻塞性UI/UX问题
+    severity: major
+
+  - id: G5.5-05
+    item: 用户手册已生成并可供参考
+    check_method: docs/user-manual/ 目录存在且内容与当前代码一致
+    severity: major
+
+pass_criteria:
+  all_blocker_pass: true
+  major_pass_rate: 80%
+
+rollback:
+  target: coding
+  condition: P0用户故事未通过或存在无法修复的阻塞问题
+  description: 返回编码阶段修复问题，修复后重新启动服务继续人工测试
 
 skip_allowed: false
 ```
@@ -374,3 +437,4 @@ skip_allowed: false
 | 日期 | 变更内容 |
 |------|---------|
 | 2026-06-23 | 初始版本，定义6个卡点门禁 |
+| 2026-06-25 | 新增G5.5人工测试评审卡点 |

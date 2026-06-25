@@ -8,7 +8,7 @@
 ```
 需求分析 → 需求评审(卡点) → 技术方案设计 → 技术方案评审(卡点)
 → 详细设计 → 详细设计评审(卡点) → 编码实现 → 代码评审(卡点)
-→ 单元测试 → 集成测试 → 测试评审(卡点) → 部署上线 → 上线验证(卡点)
+→ 单元测试 → 集成测试 → 人工测试 → 测试评审(卡点) → 部署上线 → 上线验证(卡点)
 ```
 
 ## 环节定义
@@ -210,12 +210,17 @@ artifacts:
     file: docs/pipeline/{run_id}/{project}-coding-log.md
     template: .dev-pipeline/templates/coding-log-template.md
     description: 编码过程中的决策记录、问题记录、偏差说明
+  - name: 编译构建验证记录
+    file: docs/pipeline/{run_id}/{project}-build-verification.md
+    description: 编译构建结果、启动验证结果、各模块构建状态
 responsible_role: 开发人员
 review_focus:
   - 代码是否符合规范
   - 是否按详细设计实现
   - 自测是否通过
   - 是否有技术债务
+  - 编译构建是否通过（后端 mvn compile、前端 vue-tsc + vite build、组件 vite build）
+  - 应用是否能正常启动（Spring Boot 启动无 Bean 注入失败）
 ```
 
 ### 8. 代码评审（卡点）
@@ -240,6 +245,8 @@ gate_checklist:
   - 新增依赖有必要且无安全风险
   - 日志输出规范
   - 注释充分且有意义
+  - 项目编译构建通过（后端+前端+组件）
+  - 应用可正常启动（无Bean注入失败）
 review_participants: [高级开发, 技术负责人]
 artifacts:
   - name: 代码评审记录
@@ -307,7 +314,40 @@ review_focus:
   - 性能测试是否达标
 ```
 
-### 11. 测试评审（卡点）
+### 11. 人工测试
+
+```yaml
+id: manual-testing
+name: 人工测试
+order: 10.5
+gate: false
+description: |
+  由人类测试人员按照用户故事对系统进行端到端验证。
+  测试前必须先调用 /user-manual Skill 刷新用户手册，确保测试引导文档与当前代码一致。
+  人工测试环节启动服务后，测试人员按用户故事逐一验证。
+  发现问题时，进入修复→重启→重新测试循环，直到所有用户故事验证通过。
+  如果是从已完成流程追加的人工测试（/dev-pipeline phase=manual-test），
+  则直接进入人工测试环节，测试通过后流程标记完成。
+depends_on: [integration-testing]
+artifacts:
+  - name: 人工测试引导文档
+    file: docs/pipeline/{run_id}/{project}-manual-test-guide.md
+    description: 基于用户故事的测试场景、操作步骤、预期结果
+  - name: 人工测试报告
+    file: docs/pipeline/{run_id}/{project}-manual-test-report.md
+    description: 测试结果、发现的问题、修复记录
+  - name: 用户手册
+    file: docs/user-manual/
+    description: 调用 /user-manual 生成的最新用户手册，作为人工测试的参考
+responsible_role: 测试人员（人类）
+review_focus:
+  - 所有P0用户故事验证通过
+  - 所有P1用户故事验证通过
+  - 发现的问题已修复并验证
+  - 用户体验无明显障碍
+```
+
+### 12. 测试评审（卡点）
 
 ```yaml
 id: test-review
@@ -318,7 +358,7 @@ gate_level: critical
 description: |
   对测试结果进行评审，确认产品质量达到发布标准。
   评审通过后方可进入部署阶段。
-depends_on: [integration-testing]
+depends_on: [manual-testing]
 gate_checklist:
   - 所有P0/P1缺陷已修复并验证
   - P2缺陷有明确处理计划
@@ -340,7 +380,7 @@ artifacts:
     description: 发布前的最终检查项
 ```
 
-### 12. 部署上线
+### 13. 部署上线
 
 ```yaml
 id: deployment
@@ -368,7 +408,7 @@ review_focus:
   - 监控告警是否就绪
 ```
 
-### 13. 上线验证（卡点）
+### 14. 上线验证（卡点）
 
 ```yaml
 id: release-verification
@@ -412,7 +452,8 @@ graph LR
     G --> H[代码评审★]
     H --> I[单元测试]
     I --> J[集成测试]
-    J --> K[测试评审★]
+    J --> N[人工测试]
+    N --> K[测试评审★]
     K --> L[部署上线]
     L --> M[上线验证★]
 
@@ -430,5 +471,6 @@ graph LR
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-25 | v1.2.0 在集成测试和测试评审之间新增"人工测试"环节(manual-testing, order=10.5) |
 | 2026-06-24 | v1.1.0 产出路径引入 {run_id} 隔离，支持多 run 归档 |
 | 2026-06-23 | 初始版本，定义13个流程环节 |

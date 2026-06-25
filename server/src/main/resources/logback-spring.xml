@@ -35,6 +35,7 @@
     <springProfile name="prod">
         <logger name="com.docchat" level="INFO"/>
         <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </root>
     </springProfile>
