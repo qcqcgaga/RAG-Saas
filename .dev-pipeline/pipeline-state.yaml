@@ -7,7 +7,7 @@
 ```yaml
 current_run: "mvp-2026-06-24"
 project_name: "DocChat"
-current_phase: "manual-testing"
+current_phase: "manual-test-review"
 overall_status: in_progress
 started_at: "2026-06-24"
 completed_at: "2026-06-25"
@@ -103,11 +103,16 @@ phases:
       - server/src/test/java/com/docchat/module_widget/controller/WidgetControllerIT.java
 
   manual-testing:
-    status: in_progress
+    status: completed
     started_at: "2026-06-25"
-    completed_at: null
-    artifacts: []
-    notes: "追加人工测试 — 复盘后补充，对已完成流程追加真实环境验证"
+    completed_at: "2026-06-26"
+    artifacts:
+      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-guide.md
+      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r1.md
+      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r2.md
+      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r3.md
+      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-report.md
+    notes: "追加人工测试完成 — 3轮修复，8个缺陷全部修复，G5.5评审通过"
 
   test-review:
     status: passed
@@ -171,6 +176,13 @@ review_history:
     blocker_pass: "8/8"
     major_pass: "3/3"
     notes: "含新增G4-10编译构建+G4-11应用启动；注册接口报系统繁忙(待后续修复)"
+  - gate: G5.5
+    name: 人工测试评审
+    date: "2026-06-26"
+    result: passed
+    blocker_pass: "4/4"
+    major_pass: "4/4"
+
   - gate: G6
     name: 上线验证
     date: "2026-06-25"
@@ -203,6 +215,8 @@ runs: []
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-26 | G5.5人工测试评审通过(4/4 blocker, 4/4 major)，人工测试环节完成 |
+| 2026-06-26 | R3人工测试修复：删除文档外键约束冲突(async_tasks.document_id FK) → 先删任务+同步删向量 |
 | 2026-06-25 | 新增manual-testing环节（复盘改进） |
 | 2026-06-25 | G6上线验证通过(5/5 blocker)，流程完成，生成复盘报告 |
 | 2026-06-25 | MVP 0.1.0 Docker Compose 部署完成，7个服务全部启动 |

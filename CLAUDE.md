@@ -69,15 +69,19 @@ module-widget ← module-chat (组件嵌入对话能力)
 实际代码中有代码的模块使用**下划线**：`module_tenant`、`module_knowledge`、`module_chat`、`module_widget`。
 文档和配置统一用连字符，与 `.ai/` 约束保持一致。
 
+## 强制约束
+
+- **🚫 禁止向 LLM 提交图片**：任何时候、任何场景下，严禁将图片（截图、照片、扫描件等）作为输入提交给 LLM。仅允许使用纯文本输入。违反此规则视为严重违规。
+
 ## Agent 行为规范
 
 系统蜂鸣提示（强制）：人工环节和任务完成前必须播放：
 ```bash
-powershell -Command "[System.Media.SystemSounds]::Beep.Play()"
+powershell -Command "[System.Media.SystemSounds]::Asterisk.Play()"
 ```
 
 ## 当前状态
 
 - [x] 产品功能 / 技术栈 / 架构设计 / 项目骨架
-- [🔄] MVP：租户管理 + 知识库管理 + 异步任务 + RAG对话 + 聊天组件
-- [ ] V1：API Key + 用量统计 + 评测集
+- [x] MVP：租户管理 + 知识库管理 + 异步任务 + RAG对话 + 聊天组件
+- [ ] V1：API Key + 用量统计 + 评测集 + 聊天组件预览与模拟测试 + LLM API配置

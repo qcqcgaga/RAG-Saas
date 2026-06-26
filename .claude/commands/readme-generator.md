@@ -255,7 +255,7 @@ docker run -p 80:80 shop-admin
 
 ## 许可证
 
-[MIT](LICENSE)
+[BSL 1.1](LICENSE)
 
 ## 联系方式
 

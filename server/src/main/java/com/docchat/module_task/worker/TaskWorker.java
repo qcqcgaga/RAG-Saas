@@ -158,10 +158,9 @@ public class TaskWorker {
 
     private void handleDeleteVectors(AsyncTask task) {
         Long documentId = task.getDocumentId();
-        Document doc = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("文档不存在: " + documentId));
-
-        String collectionName = milvusRepository.getCollectionName(doc.getTenantId());
+        // 文档记录可能已在 deleteDocument 事务中被删除，直接使用 tenantId
+        Long tenantId = task.getTenantId();
+        String collectionName = milvusRepository.getCollectionName(tenantId);
         milvusRepository.deleteByDocumentId(collectionName, documentId);
         log.info("已删除文档 {} 的向量数据", documentId);
     }

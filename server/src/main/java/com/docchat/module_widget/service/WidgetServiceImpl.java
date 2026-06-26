@@ -31,6 +31,9 @@ public class WidgetServiceImpl implements WidgetService {
     @Transactional
     public WidgetConfigResponse updateConfig(UpdateWidgetConfigRequest request) {
         Long tenantId = SecurityUtil.getCurrentTenantId();
+        if (tenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         WidgetConfig config = widgetConfigRepository.findByTenantId(tenantId)
             .orElseGet(() -> createDefaultConfig(tenantId));
 
@@ -53,10 +56,14 @@ public class WidgetServiceImpl implements WidgetService {
     }
 
     @Override
+    @Transactional
     public EmbedScriptResponse getEmbedScript() {
         Long tenantId = SecurityUtil.getCurrentTenantId();
+        if (tenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         WidgetConfig config = widgetConfigRepository.findByTenantId(tenantId)
-            .orElseThrow(() -> ErrorCode.WIDGET_NOT_FOUND.asBizException());
+            .orElseGet(() -> widgetConfigRepository.save(createDefaultConfig(tenantId)));
 
         String script = "<script src=\"https://cdn.docchat.com/widget.js\" data-token=\""
             + config.getWidgetToken() + "\"></script>";
@@ -76,8 +83,11 @@ public class WidgetServiceImpl implements WidgetService {
         }
 
         Long tenantId = SecurityUtil.getCurrentTenantId();
+        if (tenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         WidgetConfig config = widgetConfigRepository.findByTenantId(tenantId)
-            .orElseThrow(() -> ErrorCode.WIDGET_NOT_FOUND.asBizException());
+            .orElseGet(() -> widgetConfigRepository.save(createDefaultConfig(tenantId)));
 
         config.setWidgetToken(generateToken());
         widgetConfigRepository.save(config);

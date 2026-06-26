@@ -32,9 +32,11 @@ export function uploadDocument(formData: FormData) {
   )
 }
 
-/** 删除文档 */
+/** 删除文档（confirm=true 表示已二次确认） */
 export function deleteDocument(documentId: number) {
-  return request.delete<any, any>(`/api/v1/knowledge/documents/${documentId}`)
+  return request.delete<any, any>(`/api/v1/knowledge/documents/${documentId}`, {
+    params: { confirm: true },
+  })
 }
 
 /** 获取文档版本列表 */

@@ -27,7 +27,7 @@ export function listMembers(page = 1, size = 20) {
 }
 
 /** 邀请成员 */
-export function inviteMember(data: { email: string; role: string }) {
+export function inviteMember(data: { email: string; role: string; password: string }) {
   return request.post<any, { data: MemberInfo }>('/api/v1/tenants/members', data)
 }
 

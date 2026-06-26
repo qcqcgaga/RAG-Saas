@@ -42,5 +42,5 @@
 | 10 | 集成测试 | ✅ 完成 | — |
 | 11 | 测试评审 ★ | ✅ 通过 | — |
 | 12 | 部署上线 | ✅ 完成 | [部署方案](mvp-2026-06-24/docchat-deployment-plan.md)、[部署记录](mvp-2026-06-24/docchat-deployment-record.md) |
-| 13 | 人工测试 | ⬜ 未开始 | _复盘后新增环节，当前 run 待追加_ |
+| 13 | 人工测试 | ✅ 完成 | [测试引导](mvp-2026-06-24/docchat-manual-test-guide.md)、[修复记录R1](mvp-2026-06-24/docchat-manual-test-fix-log-r1.md)、[修复记录R2](mvp-2026-06-24/docchat-manual-test-fix-log-r2.md)、[修复记录R3](mvp-2026-06-24/docchat-manual-test-fix-log-r3.md)、[测试报告](mvp-2026-06-24/docchat-manual-test-report.md) |
 | 14 | 上线验证 ★ | ✅ 通过 | [上线验证报告](mvp-2026-06-24/docchat-release-verification.md)、[复盘报告](mvp-2026-06-24/docchat-retrospective.md) |

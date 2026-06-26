@@ -17,8 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -95,12 +93,10 @@ public class TenantServiceImpl implements TenantService {
             throw new BizException(ErrorCode.MEMBER_ALREADY_EXISTS);
         }
 
-        String randomPassword = UUID.randomUUID().toString().substring(0, 12);
-
         User user = User.builder()
             .tenantId(tenantId)
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(randomPassword))
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
             .role(request.getRole())
             .status((short) 1)
             .build();

@@ -1,5 +1,6 @@
 package com.docchat.module_tenant.service;
 
+import com.docchat.common.event.TenantCreatedEvent;
 import com.docchat.common.exception.BizException;
 import com.docchat.common.response.ErrorCode;
 import com.docchat.common.util.JwtUtil;
@@ -12,6 +13,7 @@ import com.docchat.module_tenant.repository.TenantRepository;
 import com.docchat.module_tenant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final StringRedisTemplate redisTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final String LOGIN_FAIL_KEY_PREFIX = "docchat:auth:login_fail:";
     private static final int MAX_LOGIN_FAIL_COUNT = 5;
@@ -49,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
             .status((short) 1)
             .build();
         tenant = tenantRepository.save(tenant);
+        applicationEventPublisher.publishEvent(new TenantCreatedEvent(tenant.getId()));
 
         User user = User.builder()
             .tenantId(tenant.getId())

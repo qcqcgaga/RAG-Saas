@@ -11,8 +11,10 @@ import com.docchat.module_knowledge.entity.KnowledgeBase;
 import com.docchat.module_knowledge.repository.DocumentRepository;
 import com.docchat.module_knowledge.repository.DocumentVersionRepository;
 import com.docchat.module_knowledge.repository.KnowledgeBaseRepository;
+import com.docchat.module_knowledge.repository.MilvusRepository;
 import com.docchat.module_task.entity.AsyncTask;
 import com.docchat.module_task.service.TaskService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +40,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     private final DocumentVersionRepository documentVersionRepository;
     private final DocumentFileValidator fileValidator;
     private final TaskService taskService;
+    private final EntityManager entityManager;
+    private final MilvusRepository milvusRepository;
 
     @Value("${docchat.storage.path:./uploads}")
     private String storagePath;
@@ -114,12 +118,24 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         }
         Document doc = findDocumentAndCheckOwnership(documentId);
 
+        // 1. 先删除关联的异步任务（避免外键约束冲突）
+        taskService.deleteTasksByDocumentId(documentId);
+
+        // 2. 删除文档版本
         documentVersionRepository.findByDocumentIdOrderByVersionDesc(
                 documentId).forEach(dv ->
                 documentVersionRepository.delete(dv));
+
+        // 3. 删除文档记录
         documentRepository.delete(doc);
 
-        taskService.createTask("DELETE_VECTORS", documentId);
+        // 4. 立即 flush，确保文档记录和关联数据已从数据库删除
+        entityManager.flush();
+
+        // 5. 同步删除 Milvus 向量（文档记录已删除，不再创建异步任务避免外键冲突）
+        deleteVectors(doc.getTenantId(), documentId);
+
+        // 6. 删除磁盘文件
         deleteFileFromDisk(doc.getStoredPath());
 
         log.info("文档已删除: docId={}", documentId);
@@ -153,6 +169,9 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
         // 验证租户隔离：版本必须属于当前租户
         Long currentTenantId = SecurityUtil.getCurrentTenantId();
+        if (currentTenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         if (!targetVersion.getTenantId().equals(currentTenantId)) {
             throw new BizException(ErrorCode.FORBIDDEN);
         }
@@ -191,6 +210,9 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
     private KnowledgeBase getOrCreateKnowledgeBase() {
         Long tenantId = SecurityUtil.getCurrentTenantId();
+        if (tenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         return knowledgeBaseRepository.findByTenantId(tenantId)
                 .orElseGet(() -> createDefaultKnowledgeBase(tenantId));
     }
@@ -280,6 +302,9 @@ public class KnowledgeServiceImpl implements KnowledgeService {
                         new BizException(
                                 ErrorCode.KNOWLEDGE_DOCUMENT_NOT_FOUND));
         Long currentTenantId = SecurityUtil.getCurrentTenantId();
+        if (currentTenantId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "租户信息缺失，请重新登录");
+        }
         if (!doc.getTenantId().equals(currentTenantId)) {
             throw new BizException(ErrorCode.FORBIDDEN);
         }
@@ -293,6 +318,17 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         } catch (IOException e) {
             log.warn("磁盘文件删除失败: path={}, error={}", storedPath,
                     e.getMessage());
+        }
+    }
+
+    private void deleteVectors(Long tenantId, Long documentId) {
+        try {
+            String collectionName = milvusRepository.getCollectionName(tenantId);
+            milvusRepository.deleteByDocumentId(collectionName, documentId);
+            log.info("已删除文档 {} 的向量数据", documentId);
+        } catch (Exception e) {
+            log.warn("向量删除失败（不影响文档删除）: docId={}, error={}",
+                    documentId, e.getMessage());
         }
     }
 

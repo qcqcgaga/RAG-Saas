@@ -8,6 +8,7 @@ import com.docchat.module_task.dto.TaskDetailResponse;
 import com.docchat.module_task.dto.TaskResponse;
 import com.docchat.module_task.entity.AsyncTask;
 import com.docchat.module_task.repository.AsyncTaskRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ public class TaskServiceImpl implements TaskService {
 
     private final AsyncTaskRepository taskRepository;
     private final TaskQueueService taskQueueService;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -119,6 +121,14 @@ public class TaskServiceImpl implements TaskService {
             }
             taskRepository.save(task);
         });
+    }
+
+    @Override
+    @Transactional
+    public void deleteTasksByDocumentId(Long documentId) {
+        taskRepository.deleteByDocumentId(documentId);
+        entityManager.flush();
+        log.info("已删除文档关联的异步任务: documentId={}", documentId);
     }
 
     private AsyncTask findTaskAndCheckOwnership(Long taskId) {

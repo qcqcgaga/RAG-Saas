@@ -58,10 +58,14 @@ docchat/                           # 项目根目录
 │   │   │   │   ├── module-chat/               # ===== RAG 对话服务 =====
 │   │   │   │   │   ├── package-info.java
 │   │   │   │   │   ├── controller/
+│   │   │   │   │   │   └── ChatController.java       # 对话端点（预览+正式共用，鉴权方式区分）
 │   │   │   │   │   ├── service/
 │   │   │   │   │   │   ├── ChatService.java           # 对话编排
+│   │   │   │   │   │   ├── ChatServiceImpl.java       # 对话编排实现
 │   │   │   │   │   │   ├── RetrievalService.java      # 向量检索
 │   │   │   │   │   │   └── LlmService.java            # LLM 调用抽象
+│   │   │   │   │   ├── aop/
+│   │   │   │   │   │   └── ChatStatAspect.java        # 对话统计切面（V1：按鉴权类型决定是否记录）
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   ├── entity/
 │   │   │   │   │   └── dto/
@@ -72,7 +76,7 @@ docchat/                           # 项目根目录
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   ├── entity/
 │   │   │   │   │   └── dto/
-│   │   │   │   └── module-stat/              # ===== 用量统计 (V1) =====
+│   │   │   │   ├── module-stat/              # ===== 用量统计 (V1) =====
 │   │   │   │       ├── package-info.java
 │   │   │   │       ├── controller/
 │   │   │   │       ├── service/
@@ -126,7 +130,7 @@ docchat/                           # 项目根目录
 │   │   │   ├── tenant/             #   租户管理页面
 │   │   │   ├── knowledge/          #   知识库管理页面
 │   │   │   ├── task/               #   任务状态页面
-│   │   │   └── widget/             # 聊天组件配置页面
+│   │   │   └── widget/             # 聊天组件配置页面（含 iframe 预览窗口，V1 增加模拟对话+刷新重置）
 │   │   ├── components/             # 通用可复用组件
 │   │   │   ├── layout/             #   布局组件（Header、Sidebar 等）
 │   │   │   └── common/             #   通用业务组件
@@ -151,7 +155,7 @@ docchat/                           # 项目根目录
 │       ├── vite.config.ts          # Vite lib mode，输出 IIFE
 │       ├── src/
 │       │   ├── main.ts             # 组件入口
-│       │   ├── ChatWidget.ts       # 主组件类
+│       │   ├── ChatWidget.ts       # 主组件类（V1：新增 postMessage 监听 + reset() 方法）
 │       │   ├── api.ts              # 后端 API 调用
 │       │   ├── types.ts            # 类型定义
 │       │   └── styles/             # 隔离样式
@@ -216,8 +220,8 @@ docchat/                           # 项目根目录
 | module-tenant | `server/.../module-tenant/` | 注册登录、租户工作空间、团队成员、角色权限 | MVP |
 | module-knowledge | `server/.../module-knowledge/` | 文档上传/删除、切分策略、版本管理 | MVP |
 | module-task | `server/.../module-task/` | 异步任务提交、状态查询、失败重试 | MVP |
-| module-chat | `server/.../module-chat/` | RAG 问答、向量检索、LLM 调用 | MVP |
-| module-widget | `server/.../module-widget/` | 聊天组件配置、JS 脚本生成、外观设置 | MVP |
+| module-chat | `server/.../module-chat/` | RAG 问答、向量检索、LLM 调用、预览/正式对话共用端点 | MVP |
+| module-widget | `server/.../module-widget/` | 聊天组件配置、JS 脚本生成、外观设置、预览窗口支持 | MVP |
 | module-stat | `server/.../module-stat/` | API 用量统计、Token 消耗统计 | V1 |
 | module-apikey | `server/.../module-apikey/` | API Key 生成/吊销、每日调用次数硬限制 | V1 |
 | module-eval | `server/.../module-eval/` | 评测集管理、自动评测检索 Hit Rate、评测结果历史对比 | V1 |
@@ -235,7 +239,7 @@ module-widget ← module-chat (组件嵌入对话能力)
      ↑
 module-apikey ← module-tenant (API Key 绑定租户)
      ↑
-module-stat ← module-chat (统计对话用量)
+module-stat ← module-chat (AOP 切面统计正式对话用量，预览对话不计入)
      ↑
 module-eval ← module-knowledge (评测知识库检索质量)
 ```
@@ -245,6 +249,21 @@ module-eval ← module-knowledge (评测知识库检索质量)
 - module-tenant 是基础模块，其他模块可依赖它，但它不依赖任何业务模块
 - module-chat 依赖 module-knowledge 的 Service 进行检索，但不直接操作知识库 Repository
 - 跨模块调用方向遵循依赖图，禁止循环依赖
+
+### V1 预览对话架构规则
+
+**同路径原则**：预览对话与正式访客对话走**完全相同的后端代码路径**，确保"预览 OK 则终端一定 OK"。
+
+1. **单一端点**：`POST /api/v1/chat/conversations` 是唯一的对话端点，预览和正式共用
+2. **鉴权方式区分**：
+   - 预览调用：JWT Token（管理员身份），通过 `JwtAuthenticationFilter` 解析
+   - 正式调用：widget_token（访客身份），通过 ChatController 自行解析
+3. **统计隔离**：`ChatStatAspect`（AOP 切面）拦截对话方法，根据当前鉴权类型决定是否记录用量——JWT 鉴权跳过，widget_token 鉴权记录
+4. **ChatService 零感知**：`ChatService.converse()` 内部不区分预览/正式，保证代码路径完全一致
+5. **预览窗口**：管理后台 WidgetView.vue 用 **iframe 嵌入真实 ChatWidget**，外观配置变更通过 `postMessage` 同步，刷新重置通过 `postMessage('reset')` 实现
+6. **ChatWidget 新增能力**：
+   - `postMessage` 监听器：接收 `config-update`（热更新外观）和 `reset`（清空对话恢复初始状态）
+   - `reset()` 方法：清空消息列表，恢复欢迎语
 
 ### 模块导航文件规范
 
@@ -322,3 +341,4 @@ package com.docchat.module-knowledge;
 | 日期 | 变更内容 |
 |------|---------|
 | 2026-06-23 | 初始版本：完成目录结构、分层架构、模块划分、Agent 导航约定 |
+| 2026-06-26 | V1 架构更新：① module-chat 新增 aop/ 子目录（ChatStatAspect）；② 新增"V1 预览对话架构规则"（同路径原则、鉴权区分、统计隔离、iframe 预览、ChatWidget postMessage+reset）；③ 前端 widget 视图描述更新 |

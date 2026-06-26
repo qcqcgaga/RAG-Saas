@@ -18,4 +18,6 @@ public interface TaskService {
     void updateTaskProgress(Long taskId, int progress);
 
     void updateTaskStatus(Long taskId, String status, String errorMessage);
+
+    void deleteTasksByDocumentId(Long documentId);
 }

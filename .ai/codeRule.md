@@ -73,6 +73,14 @@
 - **禁止**：在 Service 层手动传递 tenant_id 做过滤（容易遗漏）
 - **禁止**：跨租户查询（除非管理后台全局管理功能需要，且显式标注）
 
+### 预览对话安全（V1）
+
+- **同端点鉴权区分**：`POST /api/v1/chat/conversations` 同时接受 JWT（预览）和 widget_token（正式）两种鉴权方式
+- **禁止 widget_token 访问预览能力**：widget_token 只能用于正式访客对话，不能绕过 JWT 获得管理员权限
+- **统计隔离**：`ChatStatAspect` 必须校验当前鉴权类型，JWT 鉴权的对话调用**不得计入**用量统计
+- **ChatService 零感知**：对话服务内部不得出现 `isPreview` / `preview` 等判断逻辑，保证代码路径一致性
+- **postMessage 安全校验**：ChatWidget 的 postMessage 监听器必须校验 `event.origin`，防止恶意页面注入配置
+
 ### 文件上传安全
 
 - **文件类型白名单**：仅允许 PDF、Markdown、TXT
@@ -190,3 +198,4 @@ R.ok(PageResult)    → { "code": 0, "msg": "success", "data": { "list": [...], 
 | 日期 | 变更内容 |
 |------|---------|
 | 2026-06-23 | 初始版本：基于 Spring Boot + Vue 3 技术栈完善命名、安全、错误处理、日志、测试规范 |
+| 2026-06-26 | V1 安全规则更新：新增"预览对话安全"规则（同端点鉴权区分、统计隔离、ChatService 零感知、postMessage 安全校验） |

@@ -85,6 +85,9 @@
             <a-select-option value="MEMBER">成员</a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item label="初始密码" :rules="[{ required: true, message: '请输入初始密码' }, { min: 8, message: '密码至少8位' }, { pattern: /.*[A-Z].*/, message: '需包含大写字母' }, { pattern: /.*[a-z].*/, message: '需包含小写字母' }, { pattern: /.*\d.*/, message: '需包含数字' }]">
+          <a-input-password v-model:value="inviteForm.password" placeholder="至少8位，含大小写字母和数字" />
+        </a-form-item>
       </a-form>
     </a-modal>
 
@@ -125,7 +128,7 @@ const editVisible = ref(false)
 const editForm = reactive({ name: '' })
 
 const inviteVisible = ref(false)
-const inviteForm = reactive({ email: '', role: 'MEMBER' })
+const inviteForm = reactive({ email: '', role: 'MEMBER', password: '' })
 
 const roleVisible = ref(false)
 const roleForm = reactive({ userId: 0, role: '' })
@@ -186,12 +189,13 @@ async function handleEditTenant() {
 function showInviteModal() {
   inviteForm.email = ''
   inviteForm.role = 'MEMBER'
+  inviteForm.password = ''
   inviteVisible.value = true
 }
 
 async function handleInvite() {
   try {
-    await inviteMember({ email: inviteForm.email, role: inviteForm.role })
+    await inviteMember({ email: inviteForm.email, role: inviteForm.role, password: inviteForm.password })
     inviteVisible.value = false
     message.success('邀请成功')
     fetchMembers()
