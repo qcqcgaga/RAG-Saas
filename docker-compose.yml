@@ -97,6 +97,9 @@ services:
       DOCCHAT_MILVUS_URI: http://milvus:19530
       DOCCHAT_STORAGE_PATH: /app/uploads
       JWT_SECRET: ${JWT_SECRET:-docchat-prod-jwt-secret-must-be-at-least-32-chars!!}
+      DOCCHAT_LLM_API_URL: ${LLM_API_URL:-https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic/v1/messages}
+      DOCCHAT_LLM_API_KEY: ${LLM_API_KEY:-}
+      DOCCHAT_LLM_MODEL_NAME: ${LLM_MODEL:-astron-code-latest}
     ports:
       - "8080:8080"
     volumes:
@@ -118,6 +121,18 @@ services:
       - "80:80"
     depends_on:
       - server
+
+  # pgAdmin — PostgreSQL 管理工具
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@docchat.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

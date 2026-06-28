@@ -4,7 +4,44 @@
 
 聊天组件（Widget）是 DocChat 面向终端访客的交互界面。作为租户管理员，您可以配置组件外观、获取嵌入脚本、管理访问令牌，然后将组件嵌入到您的网站中。
 
-## 组件预览
+V1 版本新增了组件预览功能，支持在管理后台内实时预览外观配置效果和模拟对话。
+
+## 组件预览（V1 新增）
+
+### 预览窗口
+
+聊天组件页面内嵌了预览窗口，提供以下能力：
+
+| 能力 | 说明 |
+|------|------|
+| 外观实时预览 | 修改品牌色/欢迎语/图标后，预览窗口立即反映变化 |
+| 模拟对话 | 在预览窗口中输入问题，获得真实 RAG 回答 |
+| 刷新重置 | 点击刷新按钮，一键重置预览窗口到初始状态 |
+
+[截图：聊天组件预览窗口]
+
+### 预览对话特点
+
+| 特点 | 说明 |
+|------|------|
+| 鉴权方式 | 使用 JWT Token 鉴权（非 API Key） |
+| 统计 | 不计入用量统计 |
+| 持久化 | 对话不持久化，刷新后消失 |
+| 限额 | 不受限额约束 |
+
+> **注意**：预览对话使用 JWT 鉴权，系统根据 Token 前缀（`eyJ`）自动识别为预览模式，不计入统计和限额。
+
+### 使用预览窗口
+
+1. 进入 **聊天组件** 页面
+2. 右侧显示预览窗口
+3. 修改外观配置（品牌色、欢迎语等），预览窗口实时更新
+4. 在预览窗口中输入问题，测试 RAG 回答效果
+5. 点击刷新按钮重置预览窗口
+
+[截图：预览窗口 - 模拟对话]
+
+## 组件呈现
 
 聊天组件在网站上的呈现方式：
 
@@ -40,18 +77,21 @@
 
 - 配置修改后，聊天组件会在下次加载时自动获取最新配置
 - 已打开的聊天组件不会实时刷新，需访客刷新页面
+- 预览窗口中的配置变更实时生效
 
 ## 嵌入到网站
 
 ### 获取嵌入脚本
 
 1. 在聊天组件页面，找到 **嵌入脚本** 区域
-2. 系统已自动生成嵌入脚本代码，格式如下：
+2. 系统已自动生成嵌入脚本代码
+
+V1 版本使用 `data-api-key` 参数（推荐）：
 
 ```html
 <script
-  src="https://your-domain.com/widget.js"
-  data-token="your-widget-token"
+  src="https://cdn.docchat.com/widget.js"
+  data-api-key="dc_your_api_key_here"
   data-api-url="https://your-domain.com"
 ></script>
 ```
@@ -75,10 +115,10 @@
 <body>
   <!-- 您的网站内容 -->
 
-  <!-- DocChat 聊天组件 -->
+  <!-- DocChat 聊天组件（V1 推荐方式） -->
   <script
-    src="https://your-domain.com/widget.js"
-    data-token="your-widget-token"
+    src="https://cdn.docchat.com/widget.js"
+    data-api-key="dc_your_api_key_here"
     data-api-url="https://your-domain.com"
   ></script>
 </body>
@@ -90,19 +130,36 @@
 
 ### 脚本参数说明
 
-| 参数 | 必填 | 说明 |
-|------|------|------|
-| `src` | 是 | 聊天组件 JS 文件的 URL |
-| `data-token` | 是 | 组件访问令牌，用于鉴权和识别租户 |
-| `data-api-url` | 否 | 后端 API 地址，默认与组件 JS 同域 |
+| 参数 | 必填 | 说明 | 版本 |
+|------|------|------|------|
+| `src` | 是 | 聊天组件 JS 文件的 URL | - |
+| `data-api-key` | 推荐 | API Key，用于正式访客对话鉴权 | V1 |
+| `data-token` | 兼容 | 旧版 widget_token，过渡期兼容 | MVP |
+| `data-api-url` | 否 | 后端 API 地址，默认与组件 JS 同域 | - |
+
+> **建议**：新项目使用 `data-api-key`，旧项目请尽快从 `data-token` 迁移到 `data-api-key`。V1 优先读取 `data-api-key`，如未设置则回退到 `data-token`。
+
+### 旧版嵌入方式（过渡期兼容）
+
+```html
+<!-- 旧版方式（MVP，过渡期兼容） -->
+<script
+  src="https://cdn.docchat.com/widget.js"
+  data-token="your-widget-token"
+  data-api-url="https://your-domain.com"
+></script>
+```
 
 ## 管理访问令牌
 
 ### 令牌说明
 
-每个租户拥有一个唯一的 `widget_token`，用于：
-- 聊天组件鉴权：访客对话时通过 token 识别所属租户
-- 组件配置获取：加载组件时通过 token 获取外观配置
+每个租户拥有一个 `widget_token`，用于旧版鉴权。V1 版本推荐使用 API Key 替代。
+
+| 鉴权方式 | 版本 | 推荐度 | 说明 |
+|----------|------|--------|------|
+| API Key（`data-api-key`） | V1 | 推荐 | 支持统计、限额、多 Key |
+| widget_token（`data-token`） | MVP | 兼容 | 单令牌，无统计 |
 
 ### 重新生成令牌
 
@@ -112,7 +169,7 @@
 2. 确认操作
 3. **立即更新**您网站中的嵌入脚本，使用新令牌
 
-> **⚠️ 重要**：重新生成令牌后，旧令牌立即失效。使用旧令牌的聊天组件将无法正常工作，必须替换为新令牌。
+> **重要**：重新生成令牌后，旧令牌立即失效。使用旧令牌的聊天组件将无法正常工作，必须替换为新令牌。
 
 ## 组件工作原理
 
@@ -121,7 +178,7 @@
     ↓
 执行嵌入脚本 (widget.js)
     ↓
-从 script 标签读取 data-token 和 data-api-url
+从 script 标签读取 data-api-key（优先）或 data-token
     ↓
 调用 /api/v1/widget/config?token=xxx 获取配置
     ↓
@@ -129,18 +186,33 @@
     ↓
 用户提问 → SSE 流式请求 /api/v1/chat/conversations
     ↓
+鉴权：API Key（dc_）或 JWT（eyJ）
+    ↓
 流式显示回答 + 来源引用
 ```
 
+### postMessage 通信
+
+聊天组件通过 `window.postMessage` 与父页面通信，支持以下消息：
+
+| 方向 | 事件 | 说明 |
+|------|------|------|
+| 组件 → 父页面 | `widget:opened` | 聊天窗口打开 |
+| 组件 → 父页面 | `widget:closed` | 聊天窗口关闭 |
+| 父页面 → 组件 | `widget:open` | 打开聊天窗口 |
+| 父页面 → 组件 | `widget:close` | 关闭聊天窗口 |
+
 ### 安全机制
 
-- 聊天组件使用独立的 `widget_token` 鉴权，与管理后台 JWT Token 隔离
-- 对话接口不需要用户登录，仅需有效的 widget_token
+- V1 版本推荐使用 API Key 鉴权，支持统计和限额
+- 旧版 widget_token 鉴权在过渡期仍然可用
+- 对话接口根据 Token 前缀自动判断鉴权方式
 - 组件配置接口通过 token 参数查询，不暴露租户内部信息
 
 ## 注意事项
 
 - 聊天组件为 IIFE 格式，不会污染全局命名空间（仅挂载 `ChatWidget` 类）
 - 组件样式通过 CSS 作用域隔离，不会影响网站原有样式
-- 如需自定义组件行为，可通过 `window.postMessage` 与组件通信
 - 组件支持响应式布局，在移动端和桌面端均可正常显示
+- 预览对话不计入用量统计，可放心测试
+- 从 `data-token` 迁移到 `data-api-key` 后，对话将计入用量统计

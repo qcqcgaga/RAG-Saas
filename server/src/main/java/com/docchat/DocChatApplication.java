@@ -3,6 +3,7 @@ package com.docchat;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * DocChat 应用入口
@@ -12,6 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableAsync
 public class DocChatApplication {
 
     public static void main(String[] args) {

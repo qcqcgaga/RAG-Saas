@@ -52,6 +52,16 @@
       font-size: 14px;
       color: #ad6800;
     }
+    .error-box {
+      background: #fff1f0;
+      border: 1px solid #ffa39e;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #cf1322;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -62,34 +72,51 @@
     <div class="info-box">
       <h2>📋 测试步骤</h2>
       <div class="step" data-step="1.">
-        <p>先在 <a href="http://localhost" target="_blank">管理后台</a> 注册/登录，确保知识库中有已处理的文档</p>
+        <p>确保后端服务已启动（<code>http://localhost:8080</code>）</p>
       </div>
       <div class="step" data-step="2.">
-        <p>进入 <strong>聊天组件</strong> 页面，复制嵌入脚本代码</p>
+        <p>在 <a href="http://localhost:5173" target="_blank">管理后台</a> 注册/登录，确保知识库中有已处理的文档</p>
       </div>
       <div class="step" data-step="3.">
-        <p>将脚本粘贴到下方 <code>&lt;!-- 在此粘贴嵌入脚本 --&gt;</code> 位置</p>
+        <p>进入 <strong>聊天组件</strong> 页面，复制嵌入脚本代码</p>
       </div>
       <div class="step" data-step="4.">
-        <p>保存文件后在浏览器中打开此页面，右下角应出现聊天图标</p>
+        <p>将脚本粘贴到下方 <code>&lt;!-- 在此粘贴嵌入脚本 --&gt;</code> 位置，保存文件</p>
       </div>
       <div class="step" data-step="5.">
-        <p>点击图标，输入问题，验证对话功能</p>
+        <p>在浏览器中打开此页面（必须通过 HTTP 服务器，不能直接用 file:// 协议打开）</p>
+      </div>
+      <div class="step" data-step="6.">
+        <p>右下角应出现聊天图标，点击图标输入问题验证对话功能</p>
       </div>
     </div>
 
     <div class="info-box">
       <h2>🔗 管理后台</h2>
-      <p>访问 <a href="http://localhost" target="_blank">http://localhost</a> 管理文档和组件配置</p>
+      <p>访问 <a href="http://localhost:5173" target="_blank">http://localhost:5173</a> 管理文档和组件配置</p>
     </div>
 
     <div class="note">
-      ⚠️ 注意：当前 MVP 版本 Embedding 使用随机向量占位、LLM 使用模拟流式占位，对话返回的不是真实 AI 回答，但可以验证流式响应格式和来源引用结构是否正确。
+      ⚠️ 注意：此页面必须通过 HTTP 服务器访问（如 <code>python -m http.server</code>），
+      不能直接用 <code>file://</code> 协议打开，否则浏览器会阻止加载跨域的 widget.js。
+    </div>
+
+    <div id="widget-error" class="error-box">
+      widget.js 加载失败！请确认后端服务已启动且 URL 正确。
     </div>
   </div>
-  <script src="http://localhost/widget.js" data-token="283c1d21d8fa4ae5a60b767d310f3148" data-api-url="http://localhost"></script>
+
   <!-- 在此粘贴嵌入脚本 -->
-  <!-- 例如: <script src="http://localhost:8080/widget.js" data-token="your-widget-token" data-api-url="http://localhost:8080"></script> -->
-  
+  <!-- 例如: <script src="http://localhost:8080/widget.js" data-api-key="your-widget-token" data-api-url="http://localhost:8080"></script> -->
+
+  <!-- 下方为示例，请替换为你的实际 widget token -->
+  <script>
+    // 检测 widget.js 加载状态
+    window.addEventListener('error', function(e) {
+      if (e.target && e.target.tagName === 'SCRIPT' && e.target.src && e.target.src.includes('widget.js')) {
+        document.getElementById('widget-error').style.display = 'block';
+      }
+    }, true);
+  </script>
 </body>
 </html>

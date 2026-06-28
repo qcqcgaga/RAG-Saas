@@ -31,3 +31,7 @@ docchat:
   jwt:
     secret: ${JWT_SECRET:dev-only-secret-key-must-be-32-chars!!}
     expiration: ${JWT_EXPIRATION:86400}
+  milvus:
+    uri: http://localhost:19530
+  widget:
+    base-url: http://localhost:8080

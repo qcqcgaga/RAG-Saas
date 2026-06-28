@@ -14,5 +14,6 @@ public class WidgetConfigResponse {
     private String brandColor;
     private String welcomeMessage;
     private String iconUrl;
-    private Short enabled;
+    /** 启用状态：true-启用 false-禁用（序列化为 boolean 给前端） */
+    private Boolean enabled;
 }

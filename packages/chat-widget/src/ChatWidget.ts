@@ -1,8 +1,14 @@
 import type { ChatWidgetOptions, WidgetConfig, SourceItem } from './types'
 import { fetchConfig, streamChat } from './api'
 
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export class ChatWidget {
-  private token: string
+  private apiKey: string      // 用于对话鉴权（dc_ 前缀的 API Key）
+  private widgetToken: string // 用于获取组件配置（widget_token）
   private apiUrl: string
   private config: WidgetConfig | null = null
   private isOpen = false
@@ -10,25 +16,41 @@ export class ChatWidget {
   private container: HTMLElement | null = null
   private messagesContainer: HTMLElement | null = null
   private inputEl: HTMLInputElement | null = null
+  private messages: ChatMessage[] = []
 
   constructor(options: ChatWidgetOptions) {
-    this.token = options.token
+    // V1: apiKey 用于对话鉴权，token 用于获取配置
+    this.apiKey = options.apiKey || options.token || ''
+    this.widgetToken = options.token || options.apiKey || ''
     this.apiUrl = options.apiUrl || ''
     this.init()
   }
 
   private async init(): Promise<void> {
+    console.log('[DocChat] 开始初始化, apiKey:', this.apiKey ? '***' : '(空)', 'widgetToken:', this.widgetToken ? '***' : '(空)', 'apiUrl:', this.apiUrl)
     await this.loadConfig()
-    if (!this.config || !this.config.enabled) return
+    if (!this.config || !this.config.enabled) {
+      console.warn('[DocChat] 配置加载失败或组件未启用, config:', this.config)
+      return
+    }
+    console.log('[DocChat] 配置加载成功, enabled:', this.config.enabled)
 
     this.createDOM()
+    this.bindPostMessage()
     this.postMessage('widget:ready', {})
   }
 
   private async loadConfig(): Promise<void> {
-    const data = await fetchConfig(this.apiUrl, this.token)
-    if (data && data.code === 0) {
-      this.config = data.data
+    // 使用 widgetToken 获取组件配置
+    try {
+      const data = await fetchConfig(this.apiUrl, this.widgetToken)
+      if (data && data.code === 0) {
+        this.config = data.data
+      } else {
+        console.warn('[DocChat] 配置接口返回异常:', data)
+      }
+    } catch (e) {
+      console.error('[DocChat] 加载配置异常:', e)
     }
   }
 
@@ -76,7 +98,9 @@ export class ChatWidget {
     this.messagesContainer = document.createElement('div')
     this.messagesContainer.className = 'docchat-messages'
 
-    if (this.config!.welcomeMessage) {
+    // Only add welcome message on initial creation, not during re-render
+    if (this.messages.length === 0 && this.config!.welcomeMessage) {
+      this.messages.push({ role: 'assistant', content: this.config!.welcomeMessage })
       this.addBotMessage(this.config!.welcomeMessage)
     }
 
@@ -108,6 +132,71 @@ export class ChatWidget {
     this.container!.appendChild(chatWindow)
   }
 
+  private bindPostMessage(): void {
+    window.addEventListener('message', (event: MessageEvent) => {
+      // Security: validate origin
+      const allowedOrigins = this.config?.allowedOrigins || []
+      if (allowedOrigins.length > 0 && !allowedOrigins.includes(event.origin)) {
+        return
+      }
+
+      const data = event.data
+      if (data.type === 'config-update') {
+        // Hot update appearance config
+        this.updateConfig(data.config)
+      } else if (data.type === 'reset') {
+        // Reset conversation
+        this.reset()
+      }
+    })
+  }
+
+  /** Reset conversation and re-render */
+  public reset(): void {
+    this.messages = []
+    // Re-add welcome message
+    if (this.config?.welcomeMessage) {
+      this.messages.push({ role: 'assistant', content: this.config.welcomeMessage })
+    }
+    this.render()
+  }
+
+  /** Hot-update appearance config and re-render */
+  public updateConfig(config: Partial<WidgetConfig>): void {
+    if (config.brandColor) {
+      this.config!.brandColor = config.brandColor
+    }
+    if (config.welcomeMessage) {
+      this.config!.welcomeMessage = config.welcomeMessage
+    }
+    if (config.iconUrl) {
+      this.config!.iconUrl = config.iconUrl
+    }
+    this.render()
+  }
+
+  /** Re-render the entire widget DOM from current state */
+  private render(): void {
+    if (!this.container) return
+
+    // Remove existing DOM children
+    this.container.innerHTML = ''
+    this.messagesContainer = null
+    this.inputEl = null
+
+    this.createTrigger()
+    this.createChatWindow()
+
+    // Restore messages from state
+    for (const msg of this.messages) {
+      if (msg.role === 'user') {
+        this.addUserMessage(msg.content)
+      } else {
+        this.addBotMessage(msg.content)
+      }
+    }
+  }
+
   private toggle(): void {
     this.isOpen = !this.isOpen
     const chatWindow = this.container!.querySelector('.docchat-window') as HTMLElement
@@ -129,10 +218,11 @@ export class ChatWidget {
     this.inputEl.value = ''
     this.isSending = true
 
+    this.messages.push({ role: 'user', content: question })
     this.addUserMessage(question)
     const botMsgEl = this.addBotMessage('', true)
 
-    await streamChat(this.apiUrl, this.token, question, {
+    await streamChat(this.apiUrl, this.apiKey, question, {
       onToken: (text: string) => {
         this.updateBotMessage(botMsgEl, text)
       },
@@ -141,11 +231,14 @@ export class ChatWidget {
         if (sources.length > 0) {
           this.addSources(botMsgEl, sources)
         }
+        // Store final assistant message
+        this.messages.push({ role: 'assistant', content: botMsgEl.textContent || '' })
         this.isSending = false
       },
       onError: (message: string) => {
         this.updateBotMessage(botMsgEl, message)
         this.removeLoading(botMsgEl)
+        this.messages.push({ role: 'assistant', content: message })
         this.isSending = false
       },
     })

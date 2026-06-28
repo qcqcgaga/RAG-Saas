@@ -25,21 +25,44 @@ request.interceptors.response.use(
   (response: AxiosResponse) => {
     const { data } = response
     if (data.code !== 0) {
-      message.error(data.msg || '请求失败')
+      // 业务错误码处理
       if (data.code === 40100) {
+        // 未认证 — token 无效或过期
         localStorage.removeItem('token')
+        localStorage.removeItem('role')
+        localStorage.removeItem('tenantId')
         router.push({ name: 'login' })
+        message.error('登录已过期，请重新登录')
+      } else if (data.code === 40300) {
+        // 无权限
+        message.error('无操作权限')
+      } else {
+        message.error(data.msg || '请求失败')
       }
       return Promise.reject(new Error(data.msg))
     }
     return data
   },
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    const data = error.response?.data
+
+    if (status === 401) {
+      // Spring Security 未认证
       localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('tenantId')
       router.push({ name: 'login' })
+      message.error('登录已过期，请重新登录')
+    } else if (status === 403) {
+      // Spring Security 无权限
+      message.error(data?.msg || '无操作权限')
+    } else if (status === 404) {
+      // 资源不存在（包括API路径错误）
+      message.error(data?.msg || '请求的接口不存在')
+    } else {
+      message.error(data?.msg || '网络错误')
     }
-    message.error(error.response?.data?.msg || '网络错误')
     return Promise.reject(error)
   }
 )

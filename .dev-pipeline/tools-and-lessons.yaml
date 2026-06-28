@@ -347,6 +347,126 @@ lessons:
       追加模式下，只执行人工测试环节，不影响已完成的流程状态。
     date: 2026-06-25
     source: 项目实践-复盘改进
+
+  - id: L-MANUAL-004
+    title: 全局异常处理器不能掩盖真实错误
+    description: |
+      把404/401/403/500统一返回"系统繁忙"是最危险的做法：
+      1. 所有调试线索消失，开发者和用户无法判断问题所在
+      2. 前端API路径错误（404）和认证失败（401）都被当成服务器错误
+      3. 正确做法：404返回"资源不存在"、401返回"未认证"、403返回"无权限"
+      4. 只有真正的未预期500才返回"系统繁忙"
+      本次V1人工测试中5个"系统繁忙"问题，4个根因是404/401/权限，不是真的服务器故障。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R1修复
+
+  - id: L-MANUAL-005
+    title: 前后端API路径必须对齐
+    description: |
+      前端写API路径时必须对照后端Controller的@RequestMapping，不能凭直觉命名。
+      连字符风格(eval-sets)和路径层级风格(eval/sets)极易混淆。
+      本次V1人工测试中评测集接口全部报错，根因就是前端调/eval-sets而后端是/eval/sets。
+      对策：编码时前端API文件和后端Controller对照编写，不能只凭记忆。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R1修复
+
+  - id: L-MANUAL-006
+    title: Controller的getCurrentTenantId必须做null检查
+    description: |
+      SecurityUtil.getCurrentTenantId()从ThreadLocal获取tenantId，任何Filter执行时序问题
+      都可能导致null。如果null传入JPA查询，会抛运行时异常被全局异常处理器兜底返回"系统繁忙"。
+      对策：所有Controller统一使用requireCurrentTenantId()模式，null时抛BizException(UNAUTHORIZED)。
+      本次V1人工测试中StatController和EvalController都缺少null检查。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R1修复
+
+  - id: L-MANUAL-007
+    title: 硬编码和TODO注释是定时炸弹
+    description: |
+      LlmConfigController.getCurrentTenantId()硬编码返回1L，注释写着"TODO: 从JWT解析"，
+      但V1发布时未替换，导致所有租户共享tenantId=1的LLM配置，严重违反多租户隔离。
+      对策：编码阶段必须清除所有硬编码和TODO，或至少在代码评审时列为blocker项。
+      另：权限校验不能只写在注释里（"仅管理员可操作"），必须在代码中实现。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R1修复
+
+  - id: L-MANUAL-008
+    title: JPQL CAST在PG上不可靠
+    description: |
+      JPQL 的 CAST(expr AS type) 在 Hibernate + PostgreSQL 组合下行为不一致：
+      1. CAST(timestamp AS date) 可能抛异常或返回非预期类型
+      2. H2 内存库测试通过但 PostgreSQL 上失败（H2 宽容，PG 严格）
+      3. 对策：涉及日期函数的聚合查询改用 native query，使用数据库原生函数
+      4. native query 返回类型多样（BigInteger/BigDecimal/Long/Integer），必须用 toLong() 安全转换
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R4修复
+
+  - id: L-MANUAL-009
+    title: iframe动态script需全属性
+    description: |
+      在 iframe 中通过 createElement('script') 动态加载 widget.js 时：
+      1. 必须同时设置 data-api-key、data-token、data-api-url 三个属性
+      2. 缺少任一属性可能导致 ChatWidget 初始化参数不完整，组件渲染但无法交互
+      3. 增加 console.log 调试日志，便于在浏览器 DevTools 中定位 iframe 内部问题
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R4修复
+
+  - id: L-MANUAL-010
+    title: localStorage role需同步
+    description: |
+      Pinia store 的 role 从 localStorage 初始化，但组件挂载时可能读取到过时值：
+      1. 用户切换账号后，localStorage 已更新但 userStore.role 可能延迟
+      2. AppLayout.onMounted 中应主动同步 localStorage role → userStore.role
+      3. 这确保菜单权限（v-if="userStore.isAdmin"）与最新登录状态一致
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R4修复
+
+  - id: L-MANUAL-011
+    title: 虚拟线程JPA需独立事务
+    description: |
+      Thread.startVirtualThread() 不继承 Spring 事务上下文，JPA 操作在虚拟线程中可能因无 EntityManager 而失败。
+      对策：将虚拟线程中需要的 JPA 操作抽取到独立 Service Bean，使用 @Transactional(propagation = REQUIRES_NEW)。
+      这是 Spring AOP 代理限制的直接应用：同类内部调用不触发 @Transactional。
+      本次评测执行三轮未修复，根因就是虚拟线程中 JPA save 操作无事务管理。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R5修复
+
+  - id: L-MANUAL-012
+    title: 外部调用需完全容错
+    description: |
+      评测执行依赖 Milvus/Embedding 等外部服务，这些服务不可用时不应导致整个评测流程中断。
+      对策：将 retrievalService.retrieve() 包装为 safeRetrieve()，异常时返回空列表而非抛异常。
+      三轮未修复的评测问题，根因就是 Milvus 不可用时 retrievalService 直接抛异常。
+      "检索失败 = 未命中" 比 "检索失败 = 评测崩溃" 合理得多。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R5修复
+
+  - id: L-MANUAL-013
+    title: iframe中currentScript不可靠
+    description: |
+      document.currentScript 在 iframe 中动态加载的 script 上可能返回 null（某些浏览器特别是 Edge）。
+      对策：在 iframe 中使用 window.__DOCCHAT_CONFIG__ 全局变量传递配置，优先级高于 dataset。
+      预览窗口反复变空白四轮，根因就是 currentScript 失效导致 apiKey/token 全为空，ChatWidget 静默退出。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R5修复
+
+  - id: L-MANUAL-014
+    title: LLM token量需从SSE提取
+    description: |
+      Anthropic API 在 SSE 响应中通过 message_start.usage.input_tokens 和 message_delta.usage.output_tokens 返回 token 使用量。
+      如果不提取这些信息，用量统计中 Token 消耗永远为 0。
+      对策：LlmService.streamChat() 返回 TokenUsage，通过 AuthContext 传递给 ChatStatAspect。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R5修复
+
+  - id: L-MANUAL-015
+    title: 权限检查需双重校验
+    description: |
+      Pinia store 的响应式更新可能有延迟（特别是用户切换账号时），导致 v-if 条件读到过时值。
+      对策：computed 属性同时检查 userStore.role 和 localStorage.getItem('role')，
+      任一条件满足才显示管理员菜单。watch 监听 role 变化自动同步 localStorage。
+    date: 2026-06-28
+    source: 项目实践-V1人工测试R5修复
 ```
 ```
 
@@ -416,6 +536,107 @@ lessons:
       应用根本启动不了，却已流转到单元测试环节。
     date: 2026-06-24
     source: 项目实践-G4检查清单漏洞
+
+  - id: L-DEPLOY-006
+    title: Docker部署必读：完整重建三步法
+    description: |
+      🚨 本项目反复出现"容器运行旧代码"问题，MVP和V1共发生8+次。
+      每次修复代码后忘记/跳过重建步骤，导致人工测试验证的是旧版本。
+
+      === 绝对完整重建步骤（不可省略任何一步）===
+
+      步骤1：构建所有产物（3个构建目标，按顺序执行）
+
+        # 1a. 后端JAR
+        cd server && mvn clean package -DskipTests -q && cd ..
+
+        # 1b. chat-widget组件（前端+组件都依赖）
+        cd packages/chat-widget && npx vite build && cd ../..
+
+        # 1c. 复制widget产物到server静态资源（Docker构建会用到）
+        cp packages/chat-widget/dist/widget.js server/src/main/resources/static/widget.js
+        cp packages/chat-widget/dist/widget.css server/src/main/resources/static/widget.css
+
+        # 1d. 前端dist（必须在chat-widget之后，因为引用widget产物）
+        cd web && npx vite build && cd ..
+
+      步骤2：重建Docker镜像（必须加--no-cache，否则Docker缓存导致旧产物被打包）
+
+        docker compose build --no-cache server web
+
+      步骤3：重启容器并验证
+
+        docker compose up -d server web
+        # 等待启动完成后验证
+        docker compose logs server --tail 5 | grep "Started"
+
+      === 为什么每一步都不可省略 ===
+
+      - 省略1a：server容器运行旧的JAR，后端代码修改无效
+      - 省略1b：chat-widget修改无效，浏览器加载的是旧widget.js/css
+      - 省略1c：Docker镜像中的server静态资源是旧的，widget预览页面用旧文件
+      - 省略1d：web容器运行旧的前端dist，前端代码修改无效
+      - 省略--no-cache：Docker构建缓存导致即使产物已更新，镜像中仍打包旧产物
+        （这是最隐蔽的问题：Docker的layer缓存机制会复用未变化的层）
+      - 省略up -d：即使镜像已重建，容器仍运行旧镜像，必须recreate
+
+      === 快速判断：哪些修改需要重建哪些镜像 ===
+
+      | 修改范围 | 需要重建 | 步骤 |
+      |---------|---------|------|
+      | 只改后端Java代码 | server | 1a → 2(server) → 3 |
+      | 只改前端Vue代码 | web | 1d → 2(web) → 3 |
+      | 只改chat-widget | server + web | 1b → 1c → 1d → 2 → 3 |
+      | 改后端+前端 | server + web | 1a → 1b → 1c → 1d → 2 → 3 |
+      | 改了不确定范围 | server + web | 全部执行，宁可多构建不可漏 |
+
+      === 首次部署（从零开始） ===
+
+      1. 确认Docker Desktop运行中
+      2. 构建所有产物（步骤1全部执行）
+      3. 启动基础设施：docker compose up -d postgres redis etcd minio milvus
+      4. 等待基础设施健康（约60-90秒）：docker compose ps 确认全部 healthy
+      5. 重建并启动后端：docker compose build --no-cache server && docker compose up -d server
+      6. 等待Spring Boot启动（约30秒）：docker compose logs server --tail 5 | grep "Started"
+      7. 重建并启动前端：docker compose build --no-cache web && docker compose up -d web
+      8. 验证所有服务：docker compose ps
+
+      === 本地开发模式（不走Docker，用Vite dev server） ===
+
+      后端：cd server && mvn spring-boot:run
+      前端：cd web && npx vite dev
+      组件：cd packages/chat-widget && npx vite build --watch
+      注意：本地模式也需要在chat-widget修改后重新build，因为web引用dist产物
+    date: 2026-06-28
+    source: 项目实践-MVP+V1共8次容器版本不最新问题复盘
+    severity: critical
+    recurrence: 8+
+
+  - id: L-DEPLOY-007
+    title: 代码修改后必须重建+重启
+    description: |
+      🚨 本项目最高频问题：修改代码后忘记重建Docker镜像和重启容器。
+
+      规则：任何代码修改（Java/Vue/TypeScript/配置文件）生效到Docker容器中，
+      必须执行完整的"构建→重建镜像→重启容器→验证"链路。
+      仅仅修改源码文件不会自动更新运行中的容器。
+
+      判断矩阵：
+      - 修改了 server/ 下的任何文件 → 必须 mvn clean package + docker compose build --no-cache server + docker compose up -d server
+      - 修改了 web/ 下的任何文件 → 必须 vite build + docker compose build --no-cache web + docker compose up -d web
+      - 修改了 packages/chat-widget/ 下的任何文件 → 必须重建widget + 复制到server/static + 重建server和web两个镜像
+      - 修改了 docker/ 下的任何文件 → 必须 docker compose build --no-cache 对应服务
+      - 修改了 application.yml/application-dev.yml → 必须重建server镜像（配置打包在JAR中）
+
+      禁止的操作：
+      ❌ 修改代码后直接验证，不重建不重启
+      ❌ 只执行 docker compose up -d 而不先 build（不会重建镜像）
+      ❌ 执行 docker compose build 不加 --no-cache（可能使用缓存层中的旧产物）
+      ❌ 只重启后端不重启前端（或反之），当不确定影响范围时必须两个都重建
+    date: 2026-06-28
+    source: 项目实践-V1 R4 D2"R3修复后服务未重启"
+    severity: critical
+    recurrence: 8+
 ```
 
 ## 经验记录规范
@@ -438,6 +659,10 @@ lessons:
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-28 | 新增L-DEPLOY-006/007(Docker部署必读完整重建三步法+代码修改后必须重建重启，severity:critical，recurrence:8+) |
+| 2026-06-28 | 新增L-MANUAL-011~015(V1人工测试R5修复经验：虚拟线程JPA独立事务、外部调用完全容错、iframe currentScript不可靠、LLM token从SSE提取、权限双重校验) |
+| 2026-06-28 | 新增L-MANUAL-008~010(V1人工测试R4修复经验：JPQL CAST PG兼容、iframe动态script属性、localStorage role同步) |
+| 2026-06-28 | 新增L-MANUAL-004~010(V1人工测试R1修复经验：全局异常掩盖错误、API路径对齐、null检查、硬编码炸弹、AGENT必须重启服务、Write后验证clean compile、JPA聚合PostgreSQL兼容) |
 | 2026-06-25 | 新增L-TEST-004/005/006、L-MANUAL-001/002/003、人工测试环节工具映射 |
 | 2026-06-24 | 新增L-DEPLOY-004(编译≠运行)、L-DEPLOY-005(G4必须含启动验证) |
 | 2026-06-23 | 初始版本，定义6个环节的工具映射和15条经验 |

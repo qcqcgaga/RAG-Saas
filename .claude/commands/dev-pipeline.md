@@ -54,12 +54,35 @@ docs/pipeline/
    - `.ai/product.md` — 产品定位和功能边界
    - `.ai/codeRule.md` — 代码规范
 
-5. 判断当前状态：
+5. **🚨 强制读取经验教训（不可跳过）**：
+   - 读取 `.dev-pipeline/tools-and-lessons.yaml` 中所有 `severity: critical` 的经验记录
+   - 特别是 `L-DEPLOY-006`（Docker部署完整重建三步法）和 `L-DEPLOY-007`（代码修改后必须重建重启）
+   - **在流程执行开始前，向用户展示关键经验教训摘要**：
+     ```
+     ⚠️ 关键经验教训（本项目反复踩坑，务必遵守）：
+     
+     [L-DEPLOY-006] Docker部署必读：完整重建三步法
+       代码修改→构建产物→重建镜像(--no-cache)→重启容器→验证，缺一不可
+       本项目已因此问题返工8+次
+     
+     [L-DEPLOY-007] 代码修改后必须重建+重启
+       任何代码修改生效到Docker容器，必须执行完整链路
+       仅修改源码不会自动更新运行中的容器
+     
+     [L-DEPLOY-004] 编译通过≠能运行
+       必须实际启动应用验证，不能只看编译结果
+     
+     [L-DEPLOY-005] G4必须包含启动验证
+       代码评审必须包含编译构建+应用启动两个blocker检查项
+     ```
+   - **这些经验教训在后续每个涉及部署/重启/构建的环节中都必须再次提醒**
+
+6. 判断当前状态：
    - `not_started` → 从需求分析开始，引导用户输入原始需求
    - `in_progress` → 从当前环节继续执行
    - `blocked` → 显示阻塞原因，等待用户处理
 
-6. **确定 run_id**（仅 `not_started` 时）：
+7. **确定 run_id**（仅 `not_started` 时）：
    a. 询问用户本次执行的 scope（如 `mvp`、`v1`、`hotfix-xxx`）
    b. 基于当前日期生成 `run_id = {scope}-{date}`
    c. 检查 `docs/pipeline/{run_id}/` 是否已存在：
@@ -70,7 +93,7 @@ docs/pipeline/
    f. 在 `docs/pipeline/index.md` 中追加本次执行记录
    g. 将 `run_id` 写入 `pipeline-state.yaml` 的 `current_run` 字段
 
-7. **恢复 run_id**（`in_progress` 时）：
+8. **恢复 run_id**（`in_progress` 时）：
    a. 从 `pipeline-state.yaml` 读取 `current_run` 字段
    b. 确认 `docs/pipeline/{run_id}/` 目录存在
    c. 后续所有产出写入该目录
@@ -354,10 +377,27 @@ docs/pipeline/
    - 确保用户手册与当前代码状态一致
    - 输出到 `docs/user-manual/`
 
-2. **启动服务**：
-   - 如果服务未运行，启动 Docker Compose 或本地服务
-   - 确保所有基础设施（PostgreSQL、Redis、Milvus）可用
-   - 确保后端服务正常启动，前端可访问
+2. **🚨 重建并启动服务**（强制前置，遵循 L-DEPLOY-006/L-DEPLOY-007）：
+   - **必须执行完整重建三步法**（不可跳过任何步骤）：
+     ```
+     # 步骤1：构建所有产物
+     cd server && mvn clean package -DskipTests -q && cd ..
+     cd packages/chat-widget && npx vite build && cd ../..
+     cp packages/chat-widget/dist/widget.js server/src/main/resources/static/widget.js
+     cp packages/chat-widget/dist/widget.css server/src/main/resources/static/widget.css
+     cd web && npx vite build && cd ..
+
+     # 步骤2：重建Docker镜像（必须--no-cache）
+     docker compose build --no-cache server web
+
+     # 步骤3：重启容器并验证
+     docker compose up -d server web
+     docker compose logs server --tail 5 | grep "Started"
+     ```
+   - 如果服务未运行，先启动基础设施：`docker compose up -d postgres redis etcd minio milvus`
+   - 等待基础设施健康检查通过后再启动 server 和 web
+   - **在展示测试引导文档前，必须确认所有容器运行的是最新构建的镜像**
+   - **人工测试修复循环中，每次修复代码后也必须执行完整重建三步法**
 
 3. **生成人工测试引导文档**：
    - 基于 PRD 中的用户故事，生成以用户故事为维度的测试场景
@@ -421,7 +461,19 @@ docs/pipeline/
      a. 分析问题根因
      b. 修改代码修复问题
      c. **生成缺陷定位修复记录**（独立文档，见下方）
-     d. 重启服务
+     d. **🚨 执行完整重建三步法**（遵循 L-DEPLOY-006/L-DEPLOY-007）：
+        ```
+        # 构建所有产物 → 重建镜像 → 重启容器
+        cd server && mvn clean package -DskipTests -q && cd ..
+        cd packages/chat-widget && npx vite build && cd ../..
+        cp packages/chat-widget/dist/widget.js server/src/main/resources/static/widget.js
+        cp packages/chat-widget/dist/widget.css server/src/main/resources/static/widget.css
+        cd web && npx vite build && cd ..
+        docker compose build --no-cache server web
+        docker compose up -d server web
+        docker compose logs server --tail 5 | grep "Started"
+        ```
+        ⚠️ 禁止只修改代码不重建不重启！禁止省略 --no-cache！
      e. 通知用户重新验证该用户故事
      f. 重复直到验证通过
 
@@ -480,18 +532,23 @@ docs/pipeline/
 
 ### 执行步骤
 
-1. **生成部署方案**：
+1. **🚨 强制执行完整重建三步法**（遵循 L-DEPLOY-006/L-DEPLOY-007，不可省略）：
+   - 部署前必须执行完整的"构建产物→重建镜像→重启容器→验证"链路
+   - 具体步骤参见 `.dev-pipeline/tools-and-lessons.yaml` 中 L-DEPLOY-006
+   - **执行并验证完成后才可进入后续步骤**
+
+2. **生成部署方案**：
    - 部署步骤、回滚方案、监控方案
    - 输出到 `docs/pipeline/{run_id}/{project}-deployment-plan.md`
 
-2. **展示部署方案供审阅**：
+3. **展示部署方案供审阅**：
    - 用户确认后执行部署
 
-3. **执行部署**：
+4. **执行部署**：
    - 按部署步骤逐步执行
    - 记录每步结果
 
-4. **生成部署记录**：
+5. **生成部署记录**：
    - 输出到 `docs/pipeline/{run_id}/{project}-deployment-record.md`
 
 ---
@@ -731,8 +788,10 @@ docs/pipeline/
 14. **修复后直接验证**：人工测试发现问题时，修复代码后直接重启服务继续人工测试，无需重新走编码→测试→评审的完整流程
 15. **缺陷定位修复必须独立记录**：每轮人工测试的问题发现/定位/修复过程必须生成独立的缺陷定位修复记录文档（`manual-test-fix-log-r{N}.md`），包含每个缺陷的现象、根因分析、修复方案、修改文件和验证结果。不得仅将修复过程记录在测试引导文档中
 16. **测试引导文档由用户填写**：人工测试引导文档（`manual-test-guide.md`）中的"实际结果"由用户在测试过程中填写，AI不得修改此文件的内容。AI只负责生成初始模板和更新测试结果汇总表
+17. **🚨 Docker容器必须运行最新代码**：本项目反复出现"容器运行旧代码"问题（MVP+V1共8+次）。任何代码修改后，必须执行完整的"构建产物→重建镜像(--no-cache)→重启容器→验证"链路。仅仅修改源码不会自动更新运行中的容器。具体步骤参见 `.dev-pipeline/tools-and-lessons.yaml` 中 L-DEPLOY-006。此规则在人工测试、部署上线、以及任何涉及服务重启的环节中强制执行
+18. **🚨 经验教训强制读取**：每次流程启动时（Step 0），必须读取 `.dev-pipeline/tools-and-lessons.yaml` 中所有 `severity: critical` 的经验记录，并向用户展示摘要。在涉及部署/重启/构建的环节中再次提醒
 
 ---
-**Skill版本**: 1.3.0
+**Skill版本**: 1.4.0
 **创建日期**: 2026-06-23
-**更新日期**: 2026-06-25 — v1.3.0 人工测试缺陷定位修复独立记录机制
+**更新日期**: 2026-06-28 — v1.4.0 Docker部署强制重建机制+经验教训强制读取

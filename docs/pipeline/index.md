@@ -16,15 +16,36 @@
 
 | Run ID | Scope | 启动日期 | 当前环节 | 状态 | 产出目录 |
 |--------|-------|----------|----------|------|----------|
+| v1-2026-06-26 | V1 | 2026-06-26 | manual-testing | 🔄 进行中 | [v1-2026-06-26/](v1-2026-06-26/) |
 | mvp-2026-06-24 | MVP | 2026-06-24 | release-verification | ✅ 已完成 | [mvp-2026-06-24/](mvp-2026-06-24/) |
 
 ## 最新执行
 
-当前活跃的执行：**mvp-2026-06-24**（可通过 [latest/](latest/) 快速访问）
+当前活跃的执行：**v1-2026-06-26**（可通过 [latest/](latest/) 快速访问）
 
-> 流程已全部完成（部署上线 ✅ + 上线验证 ✅），但复盘后新增了「人工测试」环节，当前 run 待追加该环节执行。
+> V1 阶段开发：API Key + 用量统计 + 评测集 + 聊天组件预览与模拟测试 + LLM API配置
 
 ## 详细进度
+
+### v1-2026-06-26 — V1
+
+| # | 环节 | 状态 | 产出物 |
+|---|------|------|--------|
+| 1 | 需求分析 | ✅ 完成 | [PRD](v1-2026-06-26/docchat-prd.md)、[追踪矩阵](v1-2026-06-26/docchat-requirement-traceability.md) |
+| 2 | 需求评审 ★ | ✅ 通过 | [评审记录](v1-2026-06-26/docchat-requirement-review.md) |
+| 3 | 技术方案设计 | ✅ 完成 | [技术方案](v1-2026-06-26/docchat-technical-design.md)、[架构图](v1-2026-06-26/docchat-architecture.md)、[数据模型](v1-2026-06-26/docchat-data-model.md)、[API设计](v1-2026-06-26/docchat-api-design.md) |
+| 4 | 技术方案评审 ★ | ✅ 通过 | [评审记录](v1-2026-06-26/docchat-technical-review.md) |
+| 5 | 详细设计 | ✅ 完成 | [详细设计](v1-2026-06-26/docchat-detailed-design.md)、[任务拆分](v1-2026-06-26/docchat-task-breakdown.md) |
+| 6 | 详细设计评审 ★ | ✅ 通过 | [评审记录](v1-2026-06-26/docchat-detailed-design-review.md) |
+| 7 | 编码实现 | ✅ 完成 | [编码日志](v1-2026-06-26/docchat-coding-log.md) |
+| 8 | 代码评审 ★ | ✅ 有条件通过 | [评审记录](v1-2026-06-26/docchat-code-review.md) |
+| 9 | 单元测试 | ✅ 完成 | [测试报告](v1-2026-06-26/docchat-unit-test-report.md) |
+| 10 | 集成测试 | ✅ 完成 | [集成测试报告](v1-2026-06-26/docchat-integration-test-report.md) |
+| 10.5 | 人工测试 | 🔄 进行中 | [测试引导](v1-2026-06-26/docchat-manual-test-guide.md)、[修复记录R1](v1-2026-06-26/docchat-manual-test-fix-log-r1.md)、[修复记录R2](v1-2026-06-26/docchat-manual-test-fix-log-r2.md)、[修复记录R3](v1-2026-06-26/docchat-manual-test-fix-log-r3.md)、[修复记录R4](v1-2026-06-26/docchat-manual-test-fix-log-r4.md) |
+| 11 | 人工测试 | ⬜ 待开始 | — |
+| 12 | 测试评审 ★ | ⬜ 待开始 | — |
+| 13 | 部署上线 | ⬜ 待开始 | — |
+| 14 | 上线验证 ★ | ⬜ 待开始 | — |
 
 ### mvp-2026-06-24 — MVP
 

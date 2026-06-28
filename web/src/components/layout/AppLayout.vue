@@ -22,6 +22,23 @@
           <template #icon><CodeOutlined /></template>
           <span>聊天组件</span>
         </a-menu-item>
+        <a-menu-divider />
+        <a-menu-item key="apikey" @click="router.push('/apikey')">
+          <template #icon><KeyOutlined /></template>
+          <span>API Key 管理</span>
+        </a-menu-item>
+        <a-menu-item key="stats" @click="router.push('/stats')">
+          <template #icon><BarChartOutlined /></template>
+          <span>用量统计</span>
+        </a-menu-item>
+        <a-menu-item key="eval" @click="router.push('/eval')">
+          <template #icon><ExperimentOutlined /></template>
+          <span>评测集</span>
+        </a-menu-item>
+        <a-menu-item v-if="isAdminMenu" key="llm-config" @click="router.push('/llm-config')">
+          <template #icon><RobotOutlined /></template>
+          <span>LLM 配置</span>
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
 
@@ -49,9 +66,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { BookOutlined, ClockCircleOutlined, CodeOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import { BookOutlined, ClockCircleOutlined, CodeOutlined, UserOutlined, TeamOutlined, KeyOutlined, BarChartOutlined, ExperimentOutlined, RobotOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getCurrentTenant } from '@/api/tenant'
 
@@ -61,6 +78,14 @@ const userStore = useUserStore()
 
 const collapsed = ref(false)
 const tenantName = ref('')
+
+// 双重检查：userStore.isAdmin + localStorage role
+// 防止切换账号后菜单权限显示异常
+const isAdminMenu = computed(() => {
+  const storeRole = userStore.role
+  const lsRole = localStorage.getItem('role') || ''
+  return storeRole === 'ADMIN' || lsRole === 'ADMIN'
+})
 
 const selectedKeys = computed(() => {
   const path = route.path.split('/')[1] || 'knowledge'
@@ -73,11 +98,25 @@ function handleLogout() {
 }
 
 onMounted(async () => {
+  // 确保从 localStorage 恢复最新的 role 状态
+  // 防止切换账号后菜单权限显示异常
+  const storedRole = localStorage.getItem('role') || ''
+  if (storedRole && storedRole !== userStore.role) {
+    userStore.role = storedRole
+  }
+
   try {
     const res = await getCurrentTenant()
     tenantName.value = res.data.name
   } catch {
     // 忽略
+  }
+})
+
+// 监听 userStore.role 变化，同步到 localStorage
+watch(() => userStore.role, (newRole) => {
+  if (newRole) {
+    localStorage.setItem('role', newRole)
   }
 })
 </script>

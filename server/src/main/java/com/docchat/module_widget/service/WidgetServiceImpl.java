@@ -8,6 +8,7 @@ import com.docchat.module_widget.entity.WidgetConfig;
 import com.docchat.module_widget.repository.WidgetConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,9 @@ import java.util.UUID;
 public class WidgetServiceImpl implements WidgetService {
 
     private final WidgetConfigRepository widgetConfigRepository;
+
+    @Value("${docchat.widget.base-url:http://localhost:8080}")
+    private String widgetBaseUrl;
 
     @Override
     public WidgetConfigResponse getConfigByToken(String token) {
@@ -47,7 +51,7 @@ public class WidgetServiceImpl implements WidgetService {
             config.setIconUrl(request.getIconUrl());
         }
         if (request.getEnabled() != null) {
-            config.setEnabled(request.getEnabled());
+            config.setEnabled(request.getEnabled() ? (short) 1 : (short) 0);
         }
 
         config = widgetConfigRepository.save(config);
@@ -65,9 +69,11 @@ public class WidgetServiceImpl implements WidgetService {
         WidgetConfig config = widgetConfigRepository.findByTenantId(tenantId)
             .orElseGet(() -> widgetConfigRepository.save(createDefaultConfig(tenantId)));
 
-        String script = "<script src=\"https://cdn.docchat.com/widget.js\" data-token=\""
-            + config.getWidgetToken() + "\"></script>";
-        String previewUrl = "https://preview.docchat.com/" + config.getWidgetToken();
+        // 嵌入脚本：data-api-key 同时用于获取配置和对话鉴权
+        String script = "<script src=\"" + widgetBaseUrl + "/widget.js\" "
+            + "data-api-key=\"" + config.getWidgetToken() + "\" "
+            + "data-api-url=\"" + widgetBaseUrl + "\"></script>";
+        String previewUrl = widgetBaseUrl + "/preview/" + config.getWidgetToken();
 
         return EmbedScriptResponse.builder()
             .script(script)
@@ -113,7 +119,7 @@ public class WidgetServiceImpl implements WidgetService {
             .brandColor(config.getBrandColor())
             .welcomeMessage(config.getWelcomeMessage())
             .iconUrl(config.getIconUrl())
-            .enabled(config.getEnabled())
+            .enabled(config.getEnabled() != null && config.getEnabled() == 1)
             .build();
     }
 }

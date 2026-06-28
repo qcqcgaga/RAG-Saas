@@ -8,11 +8,15 @@ export interface WidgetConfig {
   welcomeMessage: string
   iconUrl: string | null
   enabled: boolean
+  allowedOrigins?: string[]
 }
 
 /** 组件初始化选项（从 script 标签 data-* 属性获取） */
 export interface ChatWidgetOptions {
-  token: string
+  /** V1: API Key 鉴权（推荐） */
+  apiKey?: string
+  /** 旧版 widget_token（过渡期兼容） */
+  token?: string
   apiUrl?: string
 }
 

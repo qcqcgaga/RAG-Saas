@@ -15,6 +15,8 @@ import lombok.Getter;
  * - TASK 模块：405xx
  * - CHAT 模块：406xx
  * - WIDGET 模块：407xx
+ * - STAT 模块：408xx
+ * - EVAL 模块：410xx
  */
 @Getter
 @AllArgsConstructor
@@ -59,7 +61,23 @@ public enum ErrorCode {
 
     // WIDGET 模块
     WIDGET_TOKEN_INVALID(40701, "Widget Token无效"),
-    WIDGET_NOT_FOUND(40702, "聊天组件配置不存在");
+    WIDGET_NOT_FOUND(40702, "聊天组件配置不存在"),
+
+    // STAT 模块
+    STAT_PERIOD_INVALID(40801, "统计周期参数无效"),
+    STAT_METRIC_INVALID(40802, "统计指标参数无效"),
+
+    // APIKEY 模块
+    APIKEY_NOT_FOUND(40910, "API Key 不存在"),
+    APIKEY_LIMIT_EXCEEDED(40913, "API Key 数量超过限制"),
+    APIKEY_ALREADY_REVOKED(40914, "API Key 已被吊销"),
+
+    // EVAL 模块
+    EVAL_SET_NOT_FOUND(41001, "评测集不存在"),
+    EVAL_SET_LIMIT_EXCEEDED(41002, "评测集数量超过限制"),
+    EVAL_PAIR_LIMIT_EXCEEDED(41003, "问答对数量超过限制"),
+    EVAL_ALREADY_RUNNING(41004, "评测已在执行中"),
+    EVAL_SET_EMPTY(41005, "评测集无问答对");
 
     private final int code;
     private final String msg;

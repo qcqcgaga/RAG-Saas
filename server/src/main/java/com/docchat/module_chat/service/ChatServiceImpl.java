@@ -1,5 +1,6 @@
 package com.docchat.module_chat.service;
 
+import com.docchat.module_chat.aop.AuthContext;
 import com.docchat.module_chat.dto.ChatEvent;
 import com.docchat.module_chat.dto.ChatRequest;
 import com.docchat.module_chat.dto.SourceReference;
@@ -16,6 +17,9 @@ import java.util.List;
  *
  * 编排 RAG 对话流程：向量检索 -> 构造 Prompt -> 流式 LLM 生成。
  * 通过 SseEmitter 推送 token/done/error 事件。
+ *
+ * V1 R5: LLM 调用完成后将 token 使用量写入 AuthContext，
+ * 供 ChatStatAspect 在 AOP 切面中读取并记录到用量统计。
  */
 @Slf4j
 @Service
@@ -61,9 +65,16 @@ public class ChatServiceImpl implements ChatService {
             String prompt = buildPrompt(request.getQuestion(), sources);
 
             // 3. 流式调用 LLM，逐 token 推送
-            llmService.streamChat(prompt, token -> emitToken(emitter, token));
+            // V1 R5: streamChat 现在返回 TokenUsage
+            LlmService.TokenUsage tokenUsage = llmService.streamChat(
+                    prompt, tenantId, token -> emitToken(emitter, token));
 
-            // 4. 发送 done 事件（含来源引用）
+            // 4. 将 token 使用量写入 AuthContext（供 ChatStatAspect 读取）
+            AuthContext.setTokenUsage(tokenUsage.promptTokens, tokenUsage.completionTokens);
+            log.info("LLM Token 使用: prompt={}, completion={}, total={}",
+                    tokenUsage.promptTokens, tokenUsage.completionTokens, tokenUsage.totalTokens());
+
+            // 5. 发送 done 事件（含来源引用）
             emitDone(emitter, sources);
             emitter.complete();
 

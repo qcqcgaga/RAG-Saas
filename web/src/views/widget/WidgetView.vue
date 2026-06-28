@@ -39,22 +39,24 @@
       <!-- 实时预览 -->
       <a-col :span="10">
         <div class="preview-card">
-          <h4>组件预览</h4>
-          <div class="preview-container">
-            <div class="preview-widget" :style="{ borderColor: form.brandColor }">
-              <div class="preview-header" :style="{ backgroundColor: form.brandColor }">
-                <img v-if="form.iconUrl" :src="form.iconUrl" class="preview-icon" />
-                <span class="preview-title">DocChat</span>
-              </div>
-              <div class="preview-body">
-                <div class="preview-bubble" :style="{ borderColor: form.brandColor }">
-                  {{ form.welcomeMessage || '你好，有什么可以帮您？' }}
-                </div>
-              </div>
-              <div class="preview-input">
-                <a-input placeholder="输入消息..." disabled size="small" />
-              </div>
-            </div>
+          <div class="preview-header-bar">
+            <h4>组件预览</h4>
+            <a-space>
+              <a-button size="small" @click="handlePreviewReset">
+                <template #icon><ReloadOutlined /></template>
+                重置对话
+              </a-button>
+            </a-space>
+          </div>
+          <div class="preview-container" v-if="widgetToken">
+            <iframe
+              ref="previewIframe"
+              :src="previewSrc"
+              class="preview-iframe"
+            ></iframe>
+          </div>
+          <div class="preview-container" v-else>
+            <a-empty description="保存配置后可预览" />
           </div>
         </div>
       </a-col>
@@ -63,14 +65,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { ReloadOutlined } from '@ant-design/icons-vue'
 import type { WidgetConfig } from '@/types/api'
 import { getWidgetConfig, updateWidgetConfig, getEmbedScript, regenerateToken } from '@/api/widget'
 
 const form = reactive<WidgetConfig>({
   brandColor: '#1890ff',
-  welcomeMessage: '',
+  welcomeMessage: '您好！有什么可以帮您？',
   iconUrl: null,
   enabled: true,
 })
@@ -78,10 +81,19 @@ const form = reactive<WidgetConfig>({
 const saving = ref(false)
 const embedScript = ref('')
 const widgetToken = ref('')
+const previewIframe = ref<HTMLIFrameElement | null>(null)
+
+/** 预览 iframe 的 src URL：指向后端预览页面 */
+const previewSrc = computed(() => {
+  if (!widgetToken.value) return ''
+  const apiBaseUrl = import.meta.env.VITE_WIDGET_API_URL
+    || (import.meta.env.DEV ? `http://localhost:${location.port}` : '')
+    || location.origin
+  return `${apiBaseUrl}/widget-preview.html?token=${encodeURIComponent(widgetToken.value)}&apiUrl=${encodeURIComponent(apiBaseUrl)}`
+})
 
 async function fetchConfig() {
   try {
-    // Use stored token or fetch config
     const storedToken = localStorage.getItem('widgetToken') || ''
     if (storedToken) {
       widgetToken.value = storedToken
@@ -95,6 +107,12 @@ async function fetchEmbedScript() {
   try {
     const res = await getEmbedScript()
     embedScript.value = res.data.script
+    // 从嵌入脚本中提取 token
+    const match = embedScript.value.match(/data-api-key="([^"]+)"/)
+    if (match && match[1]) {
+      widgetToken.value = match[1]
+      localStorage.setItem('widgetToken', match[1])
+    }
   } catch { /* handled */ }
 }
 
@@ -104,8 +122,38 @@ async function handleSave() {
     const res = await updateWidgetConfig({ ...form })
     Object.assign(form, res.data)
     message.success('配置已保存')
+    // 通知预览 iframe 更新配置
+    sendConfigUpdate()
+    // 刷新嵌入脚本
+    fetchEmbedScript()
   } catch { /* handled */ } finally {
     saving.value = false
+  }
+}
+
+/** 向预览 iframe 发送配置更新消息 */
+function sendConfigUpdate() {
+  if (previewIframe.value?.contentWindow) {
+    previewIframe.value.contentWindow.postMessage({
+      type: 'config-update',
+      source: 'docchat-admin',
+      config: {
+        brandColor: form.brandColor,
+        welcomeMessage: form.welcomeMessage,
+        iconUrl: form.iconUrl,
+      }
+    }, '*')
+  }
+}
+
+/** 重置预览窗口中的对话 */
+function handlePreviewReset() {
+  if (previewIframe.value?.contentWindow) {
+    previewIframe.value.contentWindow.postMessage({
+      type: 'reset',
+      source: 'docchat-admin',
+    }, '*')
+    message.success('对话已重置')
   }
 }
 
@@ -172,8 +220,15 @@ onMounted(() => {
   top: 24px;
 }
 
-.preview-card h4 {
+.preview-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+}
+
+.preview-header-bar h4 {
+  margin: 0;
 }
 
 .preview-container {
@@ -182,49 +237,11 @@ onMounted(() => {
   padding: 16px 0;
 }
 
-.preview-widget {
-  width: 300px;
-  border: 2px solid #1890ff;
+.preview-iframe {
+  width: 380px;
+  height: 500px;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
-  overflow: hidden;
   background: #fff;
-}
-
-.preview-header {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  color: #fff;
-  font-weight: 600;
-}
-
-.preview-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.preview-title {
-  font-size: 14px;
-}
-
-.preview-body {
-  padding: 12px;
-  min-height: 80px;
-}
-
-.preview-bubble {
-  background: #f5f5f5;
-  border-left: 3px solid #1890ff;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #333;
-  line-height: 1.5;
-}
-
-.preview-input {
-  padding: 8px 12px 12px;
 }
 </style>

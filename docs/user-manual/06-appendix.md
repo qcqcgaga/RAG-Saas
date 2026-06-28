@@ -11,14 +11,40 @@
 | 切分 | Chunking / Splitting | 将长文档按语义段落分割为小片段的过程 |
 | Milvus | Milvus | 开源向量数据库，用于存储和检索文档向量 |
 | SSE | Server-Sent Events | 服务器推送事件，用于实现对话流式输出 |
-| JWT | JSON Web Token | 无状态鉴权令牌，用于管理后台身份验证 |
-| Widget Token | Widget Token | 聊天组件专用鉴权令牌，与 JWT 隔离 |
+| JWT | JSON Web Token | 无状态鉴权令牌，用于管理后台身份验证，`eyJ` 前缀 |
+| API Key | API Key | V1 新增的聊天组件鉴权令牌，`dc_` 前缀，支持统计和限额 |
+| Widget Token | Widget Token | MVP 版本的聊天组件鉴权令牌，V1 过渡期兼容 |
 | Flyway | Flyway | 数据库版本迁移工具，管理 DDL 变更 |
 | slug | Slug | 租户的唯一 URL 友好标识，仅包含字母、数字和连字符 |
 | 对话即焚 | Ephemeral Chat | 终端访客对话不持久化存储的策略 |
 | 来源引用 | Source Citation | AI 回答附带引用的文档名称和段落位置 |
+| Hit Rate | Hit Rate | 评测命中率，检索结果中包含期望文档的比例 |
+| 评测集 | Eval Set | 包含问答对的评测集合，用于量化 RAG 检索质量 |
+| LLM | Large Language Model | 大语言模型，用于生成对话回答 |
+| 双鉴权 | Dual Auth | V1 新增，对话接口同时支持 API Key 和 JWT 两种鉴权方式 |
+| 每日限额 | Daily Quota | 每日对话调用次数硬限制，防止滥用 |
 
 ## 更新日志
+
+### V1 (2026-06)
+
+**新增功能：**
+
+- API Key 管理：创建/吊销/重命名 API Key，每租户最多 5 个，每日调用限额
+- 用量统计：概览（7d/30d）、每日明细、趋势图（calls/tokens/conversations），仅统计 API Key 鉴权对话
+- 评测集管理：创建评测集、添加问答对（最多 50 对）、批量导入、执行评测（Hit Rate）、查看评测结果与详情、历史结果对比
+- LLM 配置：租户级 LLM API 配置、连通性测试、删除配置恢复系统默认
+- 聊天组件预览：iframe 预览窗口、实时预览外观配置、模拟终端访客问答、刷新重置
+- 双鉴权模式：对话接口支持 API Key（`dc_` 前缀）和 JWT（`eyJ` 前缀）两种鉴权
+- 嵌入脚本升级：新增 `data-api-key` 参数，旧版 `data-token` 过渡期兼容
+- 数据库迁移：V5-V7 Flyway 迁移脚本，新增 V1 相关表和索引
+
+**改进：**
+
+- 对话鉴权：从单一 widget_token 升级为双鉴权模式
+- 统计能力：从无统计到完整的用量统计体系
+- 质量保障：新增评测集功能，RAG 检索质量可量化可迭代
+- 灵活性：支持租户自定义 LLM 供应商和模型
 
 ### MVP (2026-06)
 
@@ -31,62 +57,6 @@
 - 聊天组件：嵌入脚本生成、外观配置（品牌色/欢迎语/图标）、令牌管理
 - 基础设施：Docker Compose 全栈部署、PostgreSQL + Redis + Milvus 编排
 
-## API 端点速查
-
-### 认证（无需 JWT）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| POST | `/api/v1/auth/register` | 注册新账号 |
-| POST | `/api/v1/auth/login` | 登录获取 Token |
-
-### 租户管理（需要 JWT）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| GET | `/api/v1/tenants/current` | 获取当前租户信息 |
-| PUT | `/api/v1/tenants/current` | 修改当前租户信息 |
-| GET | `/api/v1/tenants/members` | 获取成员列表 |
-| POST | `/api/v1/tenants/members` | 邀请成员 |
-| PUT | `/api/v1/tenants/members/{userId}/role` | 修改成员角色 |
-| DELETE | `/api/v1/tenants/members/{userId}` | 移除成员 |
-
-### 知识库管理（需要 JWT）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| GET | `/api/v1/knowledge` | 获取知识库信息 |
-| PUT | `/api/v1/knowledge` | 更新知识库信息 |
-| GET | `/api/v1/knowledge/documents` | 文档列表（支持分页、搜索、状态筛选） |
-| POST | `/api/v1/knowledge/documents` | 上传文档 |
-| GET | `/api/v1/knowledge/documents/{id}` | 获取文档详情 |
-| DELETE | `/api/v1/knowledge/documents/{id}` | 删除文档 |
-| GET | `/api/v1/knowledge/documents/{id}/versions` | 获取版本历史 |
-| POST | `/api/v1/knowledge/documents/{docId}/versions/{verId}/rollback` | 版本回滚 |
-
-### 异步任务（需要 JWT）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| GET | `/api/v1/tasks` | 任务列表（分页） |
-| GET | `/api/v1/tasks/{id}` | 任务详情 |
-| POST | `/api/v1/tasks/{id}/retry` | 重试失败任务 |
-
-### 聊天组件（需要 JWT）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| GET | `/api/v1/widget/config` | 获取组件配置（通过 token 参数） |
-| PUT | `/api/v1/widget/config` | 更新组件配置 |
-| GET | `/api/v1/widget/embed-script` | 获取嵌入脚本 |
-| POST | `/api/v1/widget/regenerate-token` | 重新生成令牌 |
-
-### 对话（需要 widget_token）
-
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| POST | `/api/v1/chat/conversations` | 发起对话（SSE 流式） |
-
 ## 参考链接
 
 | 资源 | 链接 |
@@ -98,3 +68,4 @@
 | PostgreSQL 文档 | https://www.postgresql.org/docs/16/ |
 | Redis 文档 | https://redis.io/docs/ |
 | Flyway 文档 | https://flywaydb.org/documentation/ |
+| OpenAI API 文档 | https://platform.openai.com/docs/api-reference |

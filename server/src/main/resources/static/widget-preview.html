@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocChat Widget Preview</title>
+<style>
+body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+</style>
+</head>
+<body>
+<script>
+// 从 URL query 参数获取配置
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token') || '';
+  var apiUrl = params.get('apiUrl') || '';
+  var widgetJsUrl = (apiUrl || window.location.origin) + '/widget.js';
+
+  // 方案1: 通过全局变量传递配置（最可靠）
+  // widget.js 优先读取 window.__DOCCHAT_CONFIG__，不再依赖 document.currentScript
+  window.__DOCCHAT_CONFIG__ = {
+    apiKey: token,
+    token: token,
+    apiUrl: apiUrl || window.location.origin
+  };
+
+  // 方案2: 同时设置 data 属性作为兜底
+  var script = document.createElement('script');
+  script.src = widgetJsUrl;
+  script.setAttribute('data-api-key', token);
+  script.setAttribute('data-token', token);
+  script.setAttribute('data-api-url', apiUrl || window.location.origin);
+
+  // 添加错误处理
+  script.onerror = function() {
+    console.error('[DocChat Preview] widget.js 加载失败, url:', widgetJsUrl);
+  };
+
+  document.body.appendChild(script);
+})();
+</script>
+</body>
+</html>

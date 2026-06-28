@@ -80,7 +80,7 @@ Agent 严格按照企业级瀑布模型推进，不跳步、不省略：
 >
 > **L-TEST-005**: 人工测试必须以用户故事为单位，模拟真实用户操作流程，才能发现流程衔接中的问题。
 
-这些经验来自真实的流程回退事件，确保同样的错误不会重复发生。
+这些经验来自真实的流程回退事件，确保同样的错误不会重复发生。目前已积累 **26 条**经验记录。
 
 ### 6. 多 Run 隔离
 
@@ -101,13 +101,12 @@ docs/pipeline/
 
 ## 📊 实验进展
 
-当前状态：**MVP 流程已完成**，含人工测试及 G5.5 评审，全部环节通过。
+当前状态：**V1 开发流程进行中**，已完成至人工测试阶段（含 4 轮缺陷修复）。
 
 ```
-[✅] 需求分析 → [✅] G1需求评审 → [✅] 技术方案设计 → [✅] G2技术方案评审
-→ [✅] 详细设计 → [✅] G3详细设计评审 → [✅] 编码实现 → [✅] G4代码评审
-→ [✅] 单元测试 → [✅] 集成测试 → [✅] 人工测试 → [✅] G5.5人工测试评审
-→ [✅] G5测试评审 → [✅] 部署上线 → [✅] G6上线验证
+MVP: [✅] 全部环节通过
+V1:  [✅] 需求分析 → [✅] G1 → [✅] 技术方案设计 → [✅] G2 → [✅] 详细设计 → [✅] G3
+     → [✅] 编码实现 → [✅] G4 → [✅] 单元测试 → [✅] 集成测试 → [🔄] 人工测试(R4修复中)
 ```
 
 ### 关键事件
@@ -120,6 +119,10 @@ docs/pipeline/
 | 新增人工测试环节 | MVP 部署复盘后发现"自动化测试全绿≠系统可用"，新增人工测试环节（14 环节→7 卡点） |
 | G5.5 人工测试评审通过 | 3 轮缺陷修复（8 个缺陷全部修复），G5.5 评审 4/4 blocker + 4/4 major 通过 |
 | 19 条经验沉淀 | 流程执行中已积累 19 条工具选择与经验教训记录 |
+| V1 开发启动 | API Key + 用量统计 + 评测集 + LLM 配置 + 聊天组件预览，进入人工测试阶段 |
+| V1 双鉴权模式 | ChatController 支持 API Key(dc_) + JWT(eyJ) + Widget Token 三种鉴权方式 |
+| 真实 LLM API 接入 | LlmService 从 mock 升级为 Anthropic Messages API 流式调用，支持租户级 LLM 配置 |
+| 26 条经验沉淀 | V1 人工测试新增 7 条经验（L-MANUAL-004~010），涵盖异常处理/路径对齐/null检查/硬编码/JPQL/iframe/localStorage |
 
 ---
 
@@ -154,6 +157,7 @@ module-widget ← module-chat (组件嵌入对话能力)
 | module-apikey | API Key 生成/吊销、调用限制 | V1 |
 | module-stat | 调用量、Token 统计 | V1 |
 | module-eval | 问答对、Hit Rate 评测 | V1 |
+| module-llm-config | 租户级 LLM API 配置 | V1 |
 
 ---
 
@@ -164,7 +168,7 @@ module-widget ← module-chat (组件嵌入对话能力)
 前端:   TypeScript + Vue 3 + Ant Design Vue 4 + Pinia + Vite 6
 组件:   TypeScript + Vite (lib mode, IIFE 输出)
 工具:   Maven 3.9 + pnpm 9 + Flyway + Docker Compose
-LLM:   讯飞 Coding Plan API
+LLM:   Anthropic Messages API (支持租户级自定义配置)
 ```
 
 | 层面 | 选型 | 版本 | 用途 |
@@ -176,7 +180,7 @@ LLM:   讯飞 Coding Plan API
 | 缓存/队列 | Redis | 7.0+ | 缓存 + 异步任务队列 |
 | 前端框架 | Vue 3 | 3.4+ | Composition API |
 | UI 组件库 | Ant Design Vue | 4.x | 管理后台 UI |
-| 构建工具 | Vite | 5.x | 前端 + 组件构建 |
+| 构建工具 | Vite | 6.x | 前端 + 组件构建 |
 | 数据库迁移 | Flyway | 随 Spring Boot | 版本化 DDL |
 
 ---
@@ -204,7 +208,11 @@ docchat/
 │       ├── module_knowledge/      # 知识库管理
 │       ├── module_task/           # 异步任务处理
 │       ├── module_chat/           # RAG 对话服务
-│       └── module_widget/         # 聊天组件管理
+│       ├── module_widget/         # 聊天组件管理
+│       ├── module_apikey/         # API Key 管理（V1）
+│       ├── module_stat/           # 用量统计（V1）
+│       ├── module_eval/           # 评测集（V1）
+│       └── module_llm_config/     # LLM 配置（V1）
 ├── web/                           # 管理后台 — Vue 3 + Ant Design Vue
 ├── packages/chat-widget/          # 嵌入式聊天组件 — TypeScript IIFE
 ├── docker/                        # Docker 配置（全栈编排）
@@ -228,7 +236,16 @@ docchat/
 ### 启动基础设施
 
 ```bash
-docker compose up -d    # PostgreSQL + Redis + Milvus(etcd+MinIO)
+docker compose up -d    # PostgreSQL + Redis + Milvus(etcd+MinIO) + pgAdmin
+```
+
+### 配置 LLM API
+
+```bash
+# 在 .env 或环境变量中设置
+LLM_API_URL=https://your-llm-api-endpoint/v1/messages
+LLM_API_KEY=your-api-key
+LLM_MODEL=claude-sonnet-4-20250514
 ```
 
 ### 启动后端
@@ -289,7 +306,7 @@ cd web && pnpm install && pnpm dev
 - [x] 技术选型与架构设计
 - [x] 项目骨架初始化
 - [x] MVP：租户管理 + 知识库管理 + 异步任务 + RAG对话 + 聊天组件（上线验证通过，人工测试评审通过）
-- [ ] V1：API Key + 用量统计 + 评测集 + 聊天组件预览与模拟测试 + LLM API配置
+- [ ] V1：API Key + 用量统计 + 评测集 + 聊天组件预览与模拟测试 + LLM API配置（人工测试中）
 
 ---
 
@@ -303,6 +320,8 @@ cd web && pnpm install && pnpm dev
 4. **人类评审不可省略** — Agent 可以执行所有环节，但质量判断仍需人类把关
 5. **经验沉淀防止重蹈覆辙** — 每次回退和修正都记录为经验，形成 Agent 的"组织记忆"
 6. **自动化测试全绿 ≠ 系统可用** — 集成测试使用 H2 + MockBean 与真实环境差异巨大，人工测试以用户故事为单位验证端到端流程，是自动化测试的必要补充
+7. **全局异常处理不能掩盖真实错误** — 404/401/403 统一返回"系统繁忙"是最危险的做法，每个状态码应有明确的语义化响应
+8. **前后端 API 路径必须对齐** — 连字符风格(eval-sets)和路径层级风格(eval/sets)极易混淆，编码时必须对照后端 Controller 编写前端 API 文件
 
 ---
 

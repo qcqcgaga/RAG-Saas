@@ -36,16 +36,47 @@ const router = createRouter({
           name: 'widget',
           component: () => import('@/views/widget/WidgetView.vue'),
         },
+        {
+          path: 'apikey',
+          name: 'apikey',
+          component: () => import('@/views/apikey/index.vue'),
+          meta: { title: 'API Key 管理' },
+        },
+        {
+          path: 'stats',
+          name: 'stats',
+          component: () => import('@/views/stats/index.vue'),
+          meta: { title: '用量统计' },
+        },
+        {
+          path: 'eval',
+          name: 'eval',
+          component: () => import('@/views/eval/index.vue'),
+          meta: { title: '评测集' },
+        },
+        {
+          path: 'llm-config',
+          name: 'llm-config',
+          component: () => import('@/views/llm-config/index.vue'),
+          meta: { title: 'LLM 配置', requiresAdmin: true },
+        },
       ],
     },
   ],
 })
 
-// 路由守卫 — 未登录跳转
+// 路由守卫 — 未登录跳转 + 管理员页面权限
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   if (!token && to.name !== 'login') {
     return { name: 'login' }
+  }
+  // 管理员专属页面权限检查
+  if (to.meta?.requiresAdmin) {
+    const role = localStorage.getItem('role') || ''
+    if (role !== 'ADMIN') {
+      return { name: 'knowledge' }
+    }
   }
 })
 

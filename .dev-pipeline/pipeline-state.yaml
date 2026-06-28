@@ -5,12 +5,12 @@
 ## 当前活跃 Run
 
 ```yaml
-current_run: "mvp-2026-06-24"
+current_run: "v1-2026-06-26"
 project_name: "DocChat"
-current_phase: "manual-test-review"
+current_phase: "manual-testing"
 overall_status: in_progress
-started_at: "2026-06-24"
-completed_at: "2026-06-25"
+started_at: "2026-06-26"
+completed_at: null
 ```
 
 ## 环节执行记录
@@ -19,127 +19,107 @@ completed_at: "2026-06-25"
 phases:
   requirement-analysis:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
+    started_at: "2026-06-26"
+    completed_at: "2026-06-26"
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-prd.md
-      - docs/pipeline/mvp-2026-06-24/docchat-requirement-traceability.md
+      - docs/pipeline/v1-2026-06-26/docchat-prd.md
+      - docs/pipeline/v1-2026-06-26/docchat-requirement-traceability.md
 
   requirement-review:
     status: passed
-    reviewed_at: "2026-06-24"
+    reviewed_at: "2026-06-26"
     result: passed
     issues: []
 
   technical-design:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
+    started_at: "2026-06-26"
+    completed_at: "2026-06-26"
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-technical-design.md
-      - docs/pipeline/mvp-2026-06-24/docchat-architecture.md
-      - docs/pipeline/mvp-2026-06-24/docchat-data-model.md
-      - docs/pipeline/mvp-2026-06-24/docchat-api-design.md
+      - docs/pipeline/v1-2026-06-26/docchat-technical-design.md
+      - docs/pipeline/v1-2026-06-26/docchat-architecture.md
+      - docs/pipeline/v1-2026-06-26/docchat-data-model.md
+      - docs/pipeline/v1-2026-06-26/docchat-api-design.md
 
   technical-review:
     status: passed
-    reviewed_at: "2026-06-24"
+    reviewed_at: "2026-06-26"
     result: passed
     issues: []
 
   detailed-design:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
+    started_at: "2026-06-26"
+    completed_at: "2026-06-26"
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-detailed-design.md
-      - docs/pipeline/mvp-2026-06-24/docchat-task-breakdown.md
+      - docs/pipeline/v1-2026-06-26/docchat-detailed-design.md
+      - docs/pipeline/v1-2026-06-26/docchat-task-breakdown.md
 
   detailed-design-review:
     status: passed
-    reviewed_at: "2026-06-24"
+    reviewed_at: "2026-06-26"
     result: passed
     issues: []
 
   coding:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
+    started_at: "2026-06-26"
+    completed_at: "2026-06-26"
     artifacts:
-      - server/ (88 Java 源文件)
-      - web/ (Vue 3 + TS 管理后台)
-      - packages/chat-widget/ (IIFE 组件)
-      - docker-compose.yml
-      - docs/pipeline/mvp-2026-06-24/docchat-coding-log.md
+      - server/...module_apikey/ (11 Java files)
+      - server/...module_stat/ (9 Java files)
+      - server/...module_eval/ (19 Java files)
+      - server/...module_chat/ (4 new + 2 updated Java files)
+      - server/...db/migration/ (V5-V7 SQL scripts)
+      - web/src/views/ (4 new Vue pages)
+      - web/src/api/ (4 new API files)
+      - packages/chat-widget/ (5 updated files)
+      - docs/pipeline/v1-2026-06-26/docchat-coding-log.md
 
   code-review:
     status: passed
-    reviewed_at: "2026-06-24"
-    result: passed
+    reviewed_at: "2026-06-26"
+    result: conditional_pass
     issues:
-      - "注册接口返回系统繁忙(待集成测试修复)"
+      - "G4-11应用启动验证待集成测试补充"
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-code-review.md
-      - docs/pipeline/mvp-2026-06-24/docchat-build-verification.md
+      - docs/pipeline/v1-2026-06-26/docchat-code-review.md
 
   unit-testing:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
+    started_at: "2026-06-26"
+    completed_at: "2026-06-26"
     artifacts:
-      - server/src/test/ (6 test classes, 73 test cases)
-      - docs/pipeline/mvp-2026-06-24/docchat-unit-test-report.md
+      - server/src/test/java/com/docchat/module_apikey/service/ApiKeyServiceImplTest.java
+      - server/src/test/java/com/docchat/module_stat/service/StatServiceImplTest.java
+      - server/src/test/java/com/docchat/module_eval/service/EvalServiceImplTest.java
+      - server/src/test/java/com/docchat/module_chat/aop/ChatStatAspectTest.java
+      - server/src/test/java/com/docchat/module_chat/aop/AuthContextTest.java
+      - server/src/test/java/com/docchat/module_chat/service/LlmServiceTest.java
+      - docs/pipeline/v1-2026-06-26/docchat-unit-test-report.md
 
   integration-testing:
     status: completed
-    started_at: "2026-06-24"
-    completed_at: "2026-06-24"
-    artifacts:
-      - server/src/test/java/com/docchat/BaseIntegrationTest.java
-      - server/src/test/java/com/docchat/module_tenant/controller/AuthControllerIT.java
-      - server/src/test/java/com/docchat/module_tenant/controller/TenantControllerIT.java
-      - server/src/test/java/com/docchat/module_knowledge/controller/KnowledgeControllerIT.java
-      - server/src/test/java/com/docchat/module_task/controller/TaskControllerIT.java
-      - server/src/test/java/com/docchat/module_widget/controller/WidgetControllerIT.java
-
-  manual-testing:
-    status: completed
-    started_at: "2026-06-25"
+    started_at: "2026-06-26"
     completed_at: "2026-06-26"
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-guide.md
-      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r1.md
-      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r2.md
-      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-fix-log-r3.md
-      - docs/pipeline/mvp-2026-06-24/docchat-manual-test-report.md
-    notes: "追加人工测试完成 — 3轮修复，8个缺陷全部修复，G5.5评审通过"
+      - server/src/test/java/com/docchat/module_apikey/controller/ApiKeyControllerIT.java
+      - server/src/test/java/com/docchat/module_eval/controller/EvalControllerIT.java
+      - server/src/test/java/com/docchat/module_stat/controller/StatControllerIT.java
+      - server/src/test/java/com/docchat/module_chat/controller/LlmConfigControllerIT.java
+      - docs/pipeline/v1-2026-06-26/docchat-integration-test-report.md
 
-  test-review:
-    status: passed
-    reviewed_at: "2026-06-24"
-    result: passed
-    issues:
-      - "G5-04性能测试有条件通过，待部署后验证"
+  manual-testing:
+    status: in_progress
+    started_at: "2026-06-26"
+    completed_at: null
     artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-test-review.md
-      - docs/pipeline/mvp-2026-06-24/docchat-release-checklist.md
-
-  deployment:
-    status: completed
-    started_at: "2026-06-25"
-    completed_at: "2026-06-25"
-    artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-deployment-plan.md
-      - docs/pipeline/mvp-2026-06-24/docchat-deployment-record.md
-
-  release-verification:
-    status: passed
-    reviewed_at: "2026-06-25"
-    result: passed
-    issues:
-      - "G6-02性能测试待后续压测验证"
-    artifacts:
-      - docs/pipeline/mvp-2026-06-24/docchat-release-verification.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-guide.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-fix-log-r1.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-fix-log-r2.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-fix-log-r3.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-fix-log-r4.md
+      - docs/pipeline/v1-2026-06-26/docchat-manual-test-fix-log-r5.md
 ```
 
 ## 评审历史
@@ -148,59 +128,39 @@ phases:
 review_history:
   - gate: G1
     name: 需求评审
-    date: "2026-06-24"
+    date: "2026-06-26"
     result: passed
     blocker_pass: "3/3"
     major_pass: "2/2"
     minor_pass: "1/1"
 
-  - gate: G2
-    name: 技术方案评审
-    date: "2026-06-24"
-    result: passed
-    blocker_pass: "5/5"
-    major_pass: "2/2"
-
-  - gate: G3
-    name: 详细设计评审
-    date: "2026-06-24"
-    result: passed
-    blocker_pass: "2/2"
-    major_pass: "2/2"
-    minor_pass: "1/1"
-
   - gate: G4
     name: 代码评审
-    date: "2026-06-24"
-    result: passed
-    blocker_pass: "8/8"
+    date: "2026-06-26"
+    result: conditional_pass
+    blocker_pass: "7/8"
     major_pass: "3/3"
-    notes: "含新增G4-10编译构建+G4-11应用启动；注册接口报系统繁忙(待后续修复)"
-  - gate: G5.5
-    name: 人工测试评审
+    notes: "G4-11应用启动验证待集成测试补充"
+
+  - gate: G2
+    name: 详细设计评审
     date: "2026-06-26"
     result: passed
-    blocker_pass: "4/4"
-    major_pass: "4/4"
-
-  - gate: G6
-    name: 上线验证
-    date: "2026-06-25"
+    blocker_pass: "3/3"
+    major_pass: "2/2"
+    minor_pass: "1/1"
+    name: 技术方案评审
+    date: "2026-06-26"
     result: passed
-    blocker_pass: "5/5"
-    notes: "核心功能全部验证通过，性能测试待后续压测"
+    blocker_pass: "3/3"
+    major_pass: "2/2"
+    minor_pass: "1/1"
 ```
 
 ## 回退记录
 
 ```yaml
-rollback_history:
-  - gate: G4
-    name: 代码评审
-    date: "2026-06-24"
-    reason: "G4检查清单缺少编译构建通过(G4-10)和应用启动验证(G4-11)两个blocker项，且基础设施(PostgreSQL/Redis/Milvus)未就绪，应用无法启动"
-    rollback_to: coding
-    action: "1.补强gates.yaml和phases.yaml 2.安装Docker Desktop 3.docker compose up启动基础设施 4.验证应用启动 5.重新执行G4评审"
+rollback_history: []
 ```
 
 ## 历史 Run 记录
@@ -208,13 +168,21 @@ rollback_history:
 > 每次 run 完成后，其摘要信息保留在此。当前活跃 run 的详情在上面。
 
 ```yaml
-runs: []
+runs:
+  - run_id: "mvp-2026-06-24"
+    scope: MVP
+    started_at: "2026-06-24"
+    completed_at: "2026-06-26"
+    status: completed
+    summary: "MVP版本全流程完成 — 租户管理+知识库+异步任务+RAG对话+聊天组件，含追加人工测试(3轮修复8个缺陷)"
+    gates_passed: [G1, G2, G3, G4, G5.5, G6]
 ```
 
 ## 变更记录
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-26 | V1流程启动，run_id: v1-2026-06-26，MVP run归档到历史 |
 | 2026-06-26 | G5.5人工测试评审通过(4/4 blocker, 4/4 major)，人工测试环节完成 |
 | 2026-06-26 | R3人工测试修复：删除文档外键约束冲突(async_tasks.document_id FK) → 先删任务+同步删向量 |
 | 2026-06-25 | 新增manual-testing环节（复盘改进） |

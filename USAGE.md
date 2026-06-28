@@ -1,7 +1,7 @@
 # DocChat Agent 使用手册
 
 > 本手册面向项目所有者，指导如何使用 Claude Code + 项目 Skill 体系，从零到一构建 DocChat 产品。
-> 最后更新：2026-06-26
+> 最后更新：2026-06-28
 
 ---
 
@@ -27,7 +27,7 @@
 |-------|------|------|------|
 | 产品设计师 | `/product` | 产品定位与功能边界定义 | 主流程 |
 | 架构师 | `/architect` | 技术选型与架构设计 | 主流程 |
-| 开发全流程引擎 | `/dev-pipeline` | 需求→设计→编码→测试→部署全流程 | 主流程 |
+| 开发全流程引擎 | `/dev-pipeline` | 需求→设计→编码→测试→部署全流程，强制前置经验教训 | 主流程 |
 | 迭代复盘与优化 | `/retrospect` | 版本复盘、约束审视、技术债治理、质量趋势、Skill优化 | 主流程 |
 | 文档体系构建 | `/build_doc_sys` | 贯穿全生命周期的 LLM 友好文档体系 | 跨阶段支撑 |
 | 文档刷新与提交建议 | `/refresh-docs` | 根据git变更刷新USAGE.md/README.md，生成commit-message | 跨阶段支撑 |
@@ -227,6 +227,8 @@ Agent: 输出 .ai/tech.md + .ai/structure.md + .ai/codeRule.md
 **核心产出**：`docs/pipeline/{run_id}/` 下的全流程文档 + 代码
 
 **14 个流程环节 + 7 个卡点门禁**：
+
+> 💡 **V1 增强**：流程启动前强制读取 `tools-and-lessons.yaml` 中所有 critical 经验教训，向用户展示摘要。人工测试环节新增完整重建三步法（遵循 L-DEPLOY-006/007），每次修复代码后也必须重建+重启。
 
 ```
 [1] 需求分析
@@ -675,14 +677,14 @@ Phase 4: 收尾
 
 ### 5.4 当前约束快照（DocChat 项目）
 
-**技术栈**：Java 21 + Spring Boot 3.3 + PostgreSQL 16 + Milvus 2.4 + Redis 7 + Vue 3 + Ant Design Vue 4 + TypeScript + Vite 5
+**技术栈**：Java 21 + Spring Boot 3.3 + PostgreSQL 16 + Milvus 2.4 + Redis 7 + Vue 3 + Ant Design Vue 4 + TypeScript + Vite 6
 
 **模块划分**（8 个业务模块）：
 
-| 模块 | 阶段 |
-|------|------|
-| module-tenant / module-knowledge / module-task / module-chat / module-widget | MVP |
-| module-stat / module-apikey / module-eval | V1 |
+| 模块 | 阶段 | 状态 |
+|------|------|------|
+| module-tenant / module-knowledge / module-task / module-chat / module-widget | MVP | ✅ 已上线 |
+| module-apikey / module-stat / module-eval | V1 | 🔄 开发中（人工测试阶段） |
 
 ---
 
@@ -750,6 +752,12 @@ Phase 4: 收尾
 | ✅ G4 卡点补强 | 已完成 | 新增 G4-10(编译构建通过) + G4-11(应用可正常启动) 两个 blocker 项 |
 | ✅ 新增 `/refresh-docs` Skill | 已完成 | git 变更驱动文档同步 + commit-message 生成，每次提交前调用 |
 | ✅ 新增 `/refactor-expert` Skill | 已完成 | 架构偏差识别 + 零风险增量重构，开发流程后兜底对齐 |
+| ✅ V1 双鉴权模式 | 已完成 | ChatController 支持 API Key(dc_) + JWT(eyJ) + Widget Token 三种鉴权 |
+| ✅ 真实 LLM API 调用 | 已完成 | LlmService 从 mock 升级为 Anthropic Messages API 流式调用，支持租户级 LLM 配置 |
+| ✅ 聊天组件 iframe 预览 | 已完成 | WidgetView 从静态预览改为 iframe 实时预览，支持重置对话 |
+| ✅ 安全与异常处理增强 | 已完成 | SecurityConfig 401/403 统一 R 格式 + GlobalExceptionHandler 新增 403/404 + 前端精细化错误码 |
+| ✅ dev-pipeline 经验教训强制前置 | 已完成 | 流程启动前必须展示 critical 经验摘要，人工测试强制重建三步法 |
+| ✅ 用户手册全面更新 | 已完成 | 用户手册新增 API Key/评测集/用量统计/LLM配置等 V1 功能说明 |
 
 ### 7.2 待演进
 
@@ -759,6 +767,7 @@ Phase 4: 收尾
 | `/build_doc_sys` 与 `/dev-pipeline` 深度集成 | 开发流程各环节产出自动同步到文档体系，而非两个独立系统 | P1 |
 | `/maven-expert` 前置到架构阶段 | 在 `/architect` 技术选型完成后自动触发一次依赖健康检查 | P2 |
 | `/create_skill` 的 Skill 间协作可视化 | 生成 Skill 协作关系图，方便全局理解 | P2 |
+| V1 人工测试经验回灌 | L-MANUAL-004~010 共 7 条经验需回灌到 G4 代码评审检查清单 | P1 |
 
 ### 7.3 完整主流程闭环（当前状态）
 

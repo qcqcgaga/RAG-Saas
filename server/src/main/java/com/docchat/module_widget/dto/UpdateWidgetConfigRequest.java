@@ -16,10 +16,11 @@ public class UpdateWidgetConfigRequest {
     @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "品牌色必须为 #HEX 格式")
     private String brandColor;
 
-    @Size(min = 1, max = 200, message = "欢迎语长度必须在1-200字符之间")
+    @Size(max = 200, message = "欢迎语长度不能超过200字符")
     private String welcomeMessage;
 
     private String iconUrl;
 
-    private Short enabled;
+    /** 启用状态：1-启用 0-禁用，前端可能传 boolean 也可能传 number */
+    private Boolean enabled;
 }

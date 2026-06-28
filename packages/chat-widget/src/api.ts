@@ -7,12 +7,18 @@ import type { ConfigResponse, SseEvent, SourceItem } from './types'
 /** 加载组件远程配置 */
 export async function fetchConfig(
   apiUrl: string,
-  token: string,
+  credential: string,
 ): Promise<ConfigResponse | null> {
   try {
-    const url = `${apiUrl}/api/v1/widget/config?token=${encodeURIComponent(token)}`
+    const url = `${apiUrl}/api/v1/widget/config?token=${encodeURIComponent(credential)}`
+    console.log('[DocChat] 请求配置:', url.replace(credential, '***'))
     const res = await fetch(url)
+    if (!res.ok) {
+      console.error('[DocChat] 配置接口HTTP错误:', res.status, res.statusText)
+      return null
+    }
     const data: ConfigResponse = await res.json()
+    console.log('[DocChat] 配置接口响应 code:', data.code)
     return data
   } catch (e) {
     console.error('[DocChat] 加载配置失败:', e)
@@ -30,7 +36,7 @@ export interface ChatCallbacks {
 /** 发送对话请求（SSE 流式） */
 export async function streamChat(
   apiUrl: string,
-  token: string,
+  credential: string,
   question: string,
   callbacks: ChatCallbacks,
 ): Promise<void> {
@@ -41,7 +47,7 @@ export async function streamChat(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${credential}`,
       },
       body: JSON.stringify({ question }),
     })

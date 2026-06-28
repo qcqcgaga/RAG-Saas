@@ -36,3 +36,10 @@ docchat:
     path: ${STORAGE_PATH:./uploads}
   milvus:
     uri: ${MILVUS_URI:http://localhost:19530}
+  llm:
+    api-url: ${LLM_API_URL:https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic/v1/messages}
+    api-key: ${LLM_API_KEY:}
+    model-name: ${LLM_MODEL:astron-code-latest}
+    max-tokens: ${LLM_MAX_TOKENS:2048}
+  widget:
+    base-url: ${WIDGET_BASE_URL:http://localhost:8080}
